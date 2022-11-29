@@ -12,7 +12,7 @@
     "prepare": "husky install",
     "prepublishOnly": "npm run clean && npm run build",
     "test": "npm run build && cross-env DEBUG=masterchat vitest --run",
-    "postinstall": "cd ./node_modules/masterchat && npm install && npm run build"
+    "postinstall": "npm install && npm run build"
   },
   "type": "commonjs",
   "exports": {
