@@ -651,7 +651,7 @@ interface YTLiveChatSponsorshipsHeaderRenderer {
       }
     ];
   };
-  authorBadges: YTLiveChatAuthorBadgeRendererContainer[];
+  authorBadges?: YTLiveChatAuthorBadgeRendererContainer[];
   contextMenuEndpoint: YTLiveChatItemContextMenuEndpointContainer;
   contextMenuAccessibility: YTAccessibilityData;
   image: YTThumbnailList;
