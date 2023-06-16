@@ -327,8 +327,7 @@ export function parseLiveChatViewerEngagementMessageRenderer(
 
   const {
     id,
-    timestampUsec,
-    icon: { iconType },
+    timestampUsec
   } = renderer;
   if ("simpleText" in renderer.message) {
     debugLog(
@@ -336,8 +335,12 @@ export function parseLiveChatViewerEngagementMessageRenderer(
       JSON.stringify(renderer)
     );
   }
+  // I don't know what event causes this specifically but it probably isn't important for our use case
+  if (!("icon" in renderer) {
+    return;
+  }
 
-  switch (iconType) {
+  switch (renderer.icon.iconType) {
     case "YOUTUBE_ROUND": {
       const timestamp = tsToDate(timestampUsec!);
       const actionUrl =
