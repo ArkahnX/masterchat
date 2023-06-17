@@ -287,7 +287,7 @@ export function durationToSeconds(durationText: string): number {
   const match = /^(a|\d+)\s(year|month|week|day|hour|minute|second)s?$/.exec(
     durationText
   );
-  if (!match) throw new Error(`Invalid duration: ${durationText}`);
+  if (!match) return 0;
 
   const [_, duration, unit] = match;
   const durationInt = parseInt(duration) || 1;
