@@ -340,7 +340,7 @@ export function parseLiveChatViewerEngagementMessageRenderer(
     return;
   }
 
-  switch (renderer.icon.iconType) {
+  switch (renderer.icon?.iconType) {
     case "YOUTUBE_ROUND": {
       const timestamp = tsToDate(timestampUsec!);
       const actionUrl =
