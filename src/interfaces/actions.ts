@@ -46,7 +46,10 @@ export type Action =
   | MembershipGiftPurchaseAction
   | MembershipGiftRedemptionAction
   | ModerationMessageAction
-  | RemoveChatItemAction;
+  | RemoveChatItemAction
+  | RemoveChatItemByAuthorAction
+  | UnknownAction
+  | ParserError;
 
 export interface AddChatItemAction {
   type: "addChatItemAction";
@@ -435,7 +438,19 @@ export interface RemoveChatItemAction {
   timestamp: Date;
 }
 
+export interface RemoveChatItemByAuthorAction {
+  type: "removeChatItemByAuthorAction";
+  channelId: string;
+  timestamp: Date;
+}
+
 export interface UnknownAction {
   type: "unknown";
+  payload: unknown;
+}
+
+export interface ParserError {
+  type: "parserError";
+  error: unknown;
   payload: unknown;
 }

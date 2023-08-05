@@ -1,6 +1,23 @@
 # Changelog
 
+## v1.2.1
+
+- Add `subscribers` to `fetchMetadataFromWatch` method
+
 ## v1.2.0
+
+- New action `RemoveChatItemByAuthorAction`
+- Add action type `unknown` and `parserError`
+
+## v1.1.3
+
+- Add `emojiFountainData` to `ChatResponse`
+
+## v1.1.2
+
+- Add `likes` to `fetchMetadataFromWatch` method
+
+## v1.1.1
 
 ### New
 
@@ -8,6 +25,8 @@
   - Removed `AddRedirectBannerAction`
 - New action `RemoveChatItemAction`
 - New action `AddProductBannerAction`
+- Add `viewCount` to `fetchMetadataFromWatch` method
+- BREAKING: Remove `iterator-helpers-polyfill` support
 
 ## v1.1.0
 

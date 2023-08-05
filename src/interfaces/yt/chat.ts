@@ -4,6 +4,7 @@ import {
   YTReloadContinuation,
   YTResponseContext,
   YTBrowseEndpointContainer,
+  FrameworkUpdates,
 } from "./context";
 
 // --------------------
@@ -92,6 +93,7 @@ export interface YTChatResponse {
   continuationContents?: YTContinuationContents;
   error?: YTChatError;
   trackingParams: string;
+  frameworkUpdates?: FrameworkUpdates;
 }
 
 export interface YTGetItemContextMenuResponse {
@@ -233,6 +235,7 @@ export interface YTAction {
   markChatItemsByAuthorAsDeletedAction?: YTMarkChatItemsByAuthorAsDeletedAction;
   markChatItemAsDeletedAction?: YTMarkChatItemAsDeletedAction;
   removeChatItemAction?: YTRemoveChatItemAction;
+  removeChatItemByAuthorAction?: YTRemoveChatItemByAuthorAction;
 
   // Ticker
   addLiveChatTickerItemAction?: YTAddLiveChatTickerItemAction;
@@ -294,6 +297,10 @@ export interface YTMarkChatItemsByAuthorAsDeletedAction {
 
 export interface YTRemoveChatItemAction {
   targetItemId: string;
+}
+
+export interface YTRemoveChatItemByAuthorAction {
+  externalChannelId: string;
 }
 
 export interface YTAddBannerToLiveChatCommand {
@@ -663,7 +670,7 @@ export interface YTLiveChatSponsorshipsHeaderRenderer {
       { text: " memberships"; bold: true }
     ];
   };
-  authorBadges: YTLiveChatAuthorBadgeRendererContainer[];
+  authorBadges?: YTLiveChatAuthorBadgeRendererContainer[];
   contextMenuEndpoint: YTLiveChatItemContextMenuEndpointContainer;
   contextMenuAccessibility: YTAccessibilityData;
   image: YTThumbnailList; // https://www.gstatic.com/youtube/img/sponsorships/sponsorships_gift_purchase_announcement_artwork.png

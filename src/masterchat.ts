@@ -1,6 +1,5 @@
 import axios, { AxiosError, AxiosInstance, AxiosRequestConfig } from "axios";
 import { EventEmitter } from "events";
-import { AsyncIterator } from "iterator-helpers-polyfill";
 import { buildMeta } from "./api";
 import { buildAuthHeaders } from "./auth";
 import { parseAction } from "./chat";
@@ -43,10 +42,10 @@ import {
 } from "./interfaces/yt/chat";
 import { GetTranscriptResponse } from "./interfaces/yt/transcript";
 import {
+  CscOptions,
   addModeratorParams,
   b64tou8,
   csc,
-  CscOptions,
   getTranscriptParams,
   hideParams,
   liveReloadContinuation,
@@ -441,12 +440,12 @@ export class Masterchat extends EventEmitter {
 
   public async fetchMetadataFromWatch(id: string) {
     try {
-      const html = await this.get<string>("/watch?v=" + this.videoId);
+      const html = await this.get<string>("/watch?v=" + id);
       return parseMetadataFromWatch(html);
     } catch (err) {
       // Check ban status
       if ((err as AxiosError).code === "429") {
-        throw new AccessDeniedError("Rate limit exceeded: " + this.videoId);
+        throw new AccessDeniedError("Rate limit exceeded: " + id);
       }
       throw err;
     }
@@ -585,15 +584,6 @@ export class Masterchat extends EventEmitter {
    */
   public get stopped() {
     return this.listener === null;
-  }
-
-  /**
-   * AsyncIterator API
-   */
-  public iter(options?: IterateChatOptions): AsyncIterator<Action> {
-    return AsyncIterator.from<ChatResponse>(
-      this.iterate(options)
-    ).flatMap<Action>((action) => action.actions);
   }
 
   /**
@@ -794,6 +784,11 @@ export class Masterchat extends EventEmitter {
 
       const { continuationContents } = payload;
 
+      const emojiFountainData =
+        payload.frameworkUpdates?.entityBatchUpdate.mutations
+          .map((mutation) => mutation.payload.emojiFountainDataEntity)
+          .find(Boolean);
+
       if (!continuationContents) {
         /** there's several possibilities lied here:
          * 1. live chat is over (primary)
@@ -833,6 +828,7 @@ export class Masterchat extends EventEmitter {
         return {
           actions: [],
           continuation: undefined,
+          emojiFountainData: emojiFountainData,
           error: null,
         };
       }
@@ -846,6 +842,7 @@ export class Masterchat extends EventEmitter {
         return {
           actions: [],
           continuation: newContinuation,
+          emojiFountainData: emojiFountainData,
           error: null,
         };
       }
@@ -855,20 +852,12 @@ export class Masterchat extends EventEmitter {
         rawActions = unwrapReplayActions(rawActions);
       }
 
-      const actions = rawActions
-        .map((action) => {
-          try {
-            return parseAction(action);
-          } catch (error: any) {
-            this.log("parseAction", error.message, { action });
-            return null;
-          }
-        })
-        .filter((a): a is Action => !!a);
+      const actions = rawActions.map(parseAction).filter(Boolean);
 
       const chat: ChatResponse = {
         actions,
         continuation: newContinuation,
+        emojiFountainData: emojiFountainData,
         error: null,
       };
 
