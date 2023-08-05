@@ -143,6 +143,7 @@ export class Masterchat extends EventEmitter {
   public channelId!: string;
 
   public isLive?: boolean;
+  public isMembersOnly?: boolean;
   public channelName?: string;
   public title?: string;
   public vwCount?: number;
@@ -435,6 +436,7 @@ export class Masterchat extends EventEmitter {
     this.channelName = metadata.channelName;
     this.isLive ??= metadata.isLive;
     this.vwCount = metadata.viewCount;
+    this.isMembersOnly ??= metadata.isMembersOnly;
   }
 
   public async fetchMetadataFromWatch(id: string) {
@@ -854,8 +856,15 @@ export class Masterchat extends EventEmitter {
       }
 
       const actions = rawActions
-        .map(parseAction)
-        .filter((a): a is Action => a !== undefined);
+        .map((action) => {
+          try {
+            return parseAction(action);
+          } catch (error: any) {
+            this.log("parseAction", error.message, { action });
+            return null;
+          }
+        })
+        .filter((a): a is Action => !!a);
 
       const chat: ChatResponse = {
         actions,
