@@ -287,9 +287,10 @@ export function durationToSeconds(durationText: string): number {
   const match = /^(a|\d+)\s(year|month|week|day|hour|minute|second)s?$/.exec(
     durationText
   );
-  if (!match) {
-    throw new Error(`Invalid duration: ${durationText}`);
-  }
+
+  // throwing an error here will cause it to bubble all the way up.
+  // if (!match) throw new Error(`Invalid duration: ${durationText}`);
+  if (!match) return -1;
 
   const [_, duration, unit] = match;
   const durationInt = parseInt(duration) || 1;
@@ -383,11 +384,7 @@ export type OmitTrackingParams<T> = Omit<
 /**
  * Remove `clickTrackingParams` and `trackingParams` from object
  */
-export function omitTrackingParams<T>(obj: T): OmitTrackingParams<T> {
-  return Object.entries(obj)
-    .filter(([k]) => k !== "clickTrackingParams" && k !== "trackingParams")
-    .reduce(
-      (sum, [k, v]) => ((sum[k as keyof OmitTrackingParams<T>] = v), sum),
-      {} as OmitTrackingParams<T>
-    );
+export function omitTrackingParams<T extends { [s: string]: any; }>(obj: T): OmitTrackingParams<T> {
+  return Object.fromEntries(Object.entries(obj)
+    .filter(([k]) => k !== "clickTrackingParams" && k !== "trackingParams")) as OmitTrackingParams<T>;
 }

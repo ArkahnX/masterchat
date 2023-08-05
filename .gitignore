@@ -6,7 +6,6 @@
 .venv
 TODO.md
 
-/lib
 __nock-fixtures__
 
 # Created by https://www.toptal.com/developers/gitignore/api/node

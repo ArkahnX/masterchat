@@ -852,7 +852,16 @@ export class Masterchat extends EventEmitter {
         rawActions = unwrapReplayActions(rawActions);
       }
 
-      const actions = rawActions.map(parseAction).filter(Boolean);
+      const actions = rawActions
+        .map((action) => {
+          try {
+            return parseAction(action);
+          } catch (error: any) {
+            this.log("parseAction", error?.message, error?.stack, { action });
+            return null;
+          }
+        })
+        .filter((a): a is Action => !!a);
 
       const chat: ChatResponse = {
         actions,
