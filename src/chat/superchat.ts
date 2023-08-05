@@ -13,8 +13,10 @@ const SYMBOL_TO_TLS_MAP: Record<string, string> = {
   $: "USD",
   "£": "GBP",
   "¥": "JPY",
+	"￥": "JPY",
   "JP¥": "JPY",
   "₩": "KRW",
+  "￦": "KRW",
   "₪": "ILS",
   "€": "EUR",
   "₱": "PHP",
@@ -55,6 +57,7 @@ export function parseSuperChat(
   const significance = SUPERCHAT_SIGNIFICANCE_MAP[color];
 
   return {
+    text: stringify(renderer.purchaseAmountText.simpleText),
     amount,
     currency,
     color,

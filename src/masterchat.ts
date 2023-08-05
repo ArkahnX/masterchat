@@ -444,9 +444,10 @@ export class Masterchat extends EventEmitter {
       return parseMetadataFromWatch(html);
     } catch (err) {
       // Check ban status
-      if ((err as AxiosError).code === "429") {
+      if ((err as AxiosError).code === "ERR_BAD_REQUEST" && (err as AxiosError).response.status === 429) {
         throw new AccessDeniedError("Rate limit exceeded: " + id);
       }
+      console.error(`Throwing unknown error, code: ${err.code}, ${err.response.status}`)
       throw err;
     }
   }
@@ -456,7 +457,7 @@ export class Masterchat extends EventEmitter {
       const html = await this.get<string>(`/embed/${id}`);
       return parseMetadataFromEmbed(html);
     } catch (err) {
-      if ((err as AxiosError).code === "429")
+      if ((err as AxiosError).code === "ERR_BAD_REQUEST" && (err as AxiosError).response.status === 429)
         throw new AccessDeniedError("Rate limit exceeded: " + id);
     }
   }
@@ -558,7 +559,7 @@ export class Masterchat extends EventEmitter {
           this.emit("end", reason);
           return;
         }
-
+        console.error("Emit unrecoverable masterchat error in \"listen\"")
         this.emit("error", err);
       })
       .finally(() => {
@@ -680,6 +681,7 @@ export class Masterchat extends EventEmitter {
       try {
         payload = await this.post<YTChatResponse>(requestUrl, requestBody);
       } catch (err) {
+        console.error(`Error caught while trying to loop fetch`, this.videoId)
         // handle user cancallation
         if ((err as any)?.message === "canceled") {
           this.log(`fetch`, `Request canceled`);
@@ -687,14 +689,9 @@ export class Masterchat extends EventEmitter {
         }
 
         // handle server errors
-        if ((err as any)?.isAxiosError) {
-          const { code: axiosErrorCode, response } = err as AxiosError<{
-            error: {
-              code: number;
-              status: string;
-              message: string;
-            };
-          }>;
+        if (axios.isAxiosError(err)) {
+					const response = err.response;
+					const axiosErrorCode = err.code;
 
           // handle early timeout
           if (
@@ -735,6 +732,14 @@ export class Masterchat extends EventEmitter {
            * 503: The service is currently unavailable
            *   - temporary server-side failure
            */
+          if (
+						"error" in response.data === false ||
+						"code" in response.data.error === false ||
+						"status" in response.data.error === false ||
+						"message" in response.data.error === false
+					) {
+						console.error("Masterchat logged an error that doesn't exist: " + JSON.stringify(response.data.error));
+					}
           const { code, status, message } = response.data.error;
           this.log(`fetch`, `API error: ${code} (${status}): ${message}`);
 

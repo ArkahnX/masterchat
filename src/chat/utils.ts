@@ -5,7 +5,7 @@ export function pickThumbUrl(thumbList: YTThumbnailList): string {
   return thumbList.thumbnails[thumbList.thumbnails.length - 1].url;
 }
 
-export function parseColorCode(code: number): Color {
+export function parseColorCode(code: number): string {
   if (code > 4294967295) {
     throw new Error(`Invalid color code: ${code}`);
   }
@@ -15,7 +15,8 @@ export function parseColorCode(code: number): Color {
   const r = (code >>> 16) & 0xff;
   const opacity = code >>> 24;
 
-  return { r, g, b, opacity };
+  // return { r, g, b, opacity };
+  return "#" + (256 + r).toString(16).slice(1) + ((1 << 24) | (g << 16) | (b << 8) | opacity).toString(16).slice(1);
 }
 
 const magnitudes = new Map([

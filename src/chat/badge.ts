@@ -4,6 +4,7 @@ import {
   YTLiveChatTextMessageRenderer,
 } from "../interfaces/yt/chat";
 import { Membership } from "../interfaces/misc";
+import hololiveChannels from "../../../../data/hololive-channels.json";
 
 export function parseMembership(badge?: YTAuthorBadge): Membership | undefined {
   if (!badge) return;
@@ -30,6 +31,9 @@ export function parseBadges(renderer: YTLiveChatTextMessageRenderer) {
     isOwner = false,
     isModerator = false,
     membership: Membership | undefined = undefined;
+    if(renderer.authorExternalChannelId in hololiveChannels) {
+      isModerator = true;
+    }
 
   if ("authorBadges" in renderer && renderer.authorBadges) {
     for (const badge of renderer.authorBadges) {

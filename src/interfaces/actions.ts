@@ -118,10 +118,10 @@ export interface AddSuperStickerItemAction {
   currency: string;
   stickerDisplayWidth: number;
   stickerDisplayHeight: number;
-  moneyChipBackgroundColor: Color;
-  moneyChipTextColor: Color;
-  backgroundColor: Color;
-  authorNameTextColor: Color;
+  moneyChipBackgroundColor: string;
+  moneyChipTextColor: string;
+  backgroundColor: string;
+  authorNameTextColor: string;
 }
 
 export interface AddMembershipItemAction {
@@ -213,9 +213,9 @@ export interface AddSuperChatTickerAction {
   durationSec: number;
   fullDurationSec: number;
   contents: AddSuperChatItemAction;
-  amountTextColor: Color;
-  startBackgroundColor: Color;
-  endBackgroundColor: Color;
+  amountTextColor: string;
+  startBackgroundColor: string;
+  endBackgroundColor: string;
 }
 
 export interface AddSuperStickerTickerAction {
@@ -229,8 +229,8 @@ export interface AddSuperStickerTickerAction {
   tickerPackName: string;
   tickerPackThumbnail: string;
   contents: AddSuperStickerItemAction;
-  startBackgroundColor: Color;
-  endBackgroundColor: Color;
+  startBackgroundColor: string;
+  endBackgroundColor: string;
 }
 
 export interface AddMembershipTickerAction {
@@ -247,9 +247,9 @@ export interface AddMembershipTickerAction {
     | AddMembershipItemAction
     | AddMembershipMilestoneItemAction
     | MembershipGiftPurchaseTickerContent;
-  detailTextColor: Color;
-  startBackgroundColor: Color;
-  endBackgroundColor: Color;
+  detailTextColor: string;
+  startBackgroundColor: string;
+  endBackgroundColor: string;
 }
 
 export interface AddBannerAction {

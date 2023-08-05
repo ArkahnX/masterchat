@@ -165,11 +165,11 @@ export function emojiRunToPlainText(run: YTEmojiRun): string {
       },
     },
    */
-  const term =
-    emoji.isCustomEmoji || emoji.emojiId === ""
-      ? emoji.shortcuts[emoji.shortcuts.length - 1]
-      : emoji.emojiId;
-  return term;
+  if("shortcuts" in emoji) {
+    return emoji.shortcuts[0];
+  } else {
+    return emoji.emojiId
+  }
 }
 
 /**

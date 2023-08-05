@@ -31,16 +31,17 @@ export type SuperChatColor =
   typeof SUPERCHAT_COLOR_MAP[keyof typeof SUPERCHAT_COLOR_MAP];
 
 export interface SuperChat {
+  text: string;
   amount: number;
   currency: string;
   color: SuperChatColor;
   significance: SuperChatSignificance;
-  authorNameTextColor: Color;
-  timestampColor: Color;
-  headerBackgroundColor: Color;
-  headerTextColor: Color;
-  bodyBackgroundColor: Color;
-  bodyTextColor: Color;
+  authorNameTextColor: string;
+  timestampColor: string;
+  headerBackgroundColor: string;
+  headerTextColor: string;
+  bodyBackgroundColor: string;
+  bodyTextColor: string;
 }
 
 export interface Membership {

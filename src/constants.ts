@@ -6,10 +6,9 @@ function h(b: TemplateStringsArray): string {
 
 export const DH = {
   "Accept-Language": "en",
-  "User-Agent":
-    "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/90.0.4430.93 Safari/537.36",
+  "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/115.0.0.0 Safari/537.36",
 };
-export const DC = { clientName: "WEB", clientVersion: "2.20211014.05.00" };
+export const DC = { clientName: "WEB", clientVersion: "2.20230801.01.00" };
 
 export const DO = "https://www.youtube.com";
 export const DAK = h`41497a615379414f5f464a32536c7155385134535445484c4743696c775f59395f313171635738`;

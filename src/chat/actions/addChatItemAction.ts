@@ -347,7 +347,7 @@ export function parseLiveChatViewerEngagementMessageRenderer(
     );
   }
   // I don't know what event causes this specifically but it probably isn't important for our use case
-  if (!("icon" in renderer) {
+  if ("icon" in renderer === false) {
     return;
   }
 

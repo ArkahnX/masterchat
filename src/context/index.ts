@@ -6,13 +6,15 @@ import {
   UnavailableError,
 } from "../errors";
 import { runsToString, stringify  } from "../utils";
-import { YTInitialData, YTPlayabilityStatus, PurpleStyle } from "../interfaces/yt/context";
+import { YTInitialData, YTPlayabilityStatus, PurpleStyle, ResultsResults } from "../interfaces/yt/context";
+import { DC } from "../constants";
 
 // OK duration=">0" => Archived (replay chat may be available)
 // OK duration="0" => Live (chat may be available)
 // LIVE_STREAM_OFFLINE => Offline (chat may be available)
-function assertPlayability(playabilityStatus: YTPlayabilityStatus | undefined) {
+function assertPlayability(playabilityStatus: YTPlayabilityStatus | undefined, html: string) {
   if (!playabilityStatus) {
+    console.error("Watch HTML", html);
     throw new Error("playabilityStatus missing");
   }
   switch (playabilityStatus.status) {
@@ -34,24 +36,57 @@ function assertPlayability(playabilityStatus: YTPlayabilityStatus | undefined) {
 }
 
 export function findCfg(data: string) {
-  const match = /ytcfg\.set\(({.+?})\);/.exec(data);
-  if (!match) return;
+  const match = /ytcfg\.set\s*\(\s*({.+?})\s*\)\s*;/.exec(data);
+  if (!match) {console.error(`No match found for "findCfg"`);
+  return;
+}
   return JSON.parse(match[1]);
 }
 
 export function findIPR(data: string): unknown {
-  const match = /var ytInitialPlayerResponse = (.+?);var meta/.exec(data);
-  if (!match) return;
+  const match = /ytInitialPlayerResponse\s*=\s*({.+?})\s*;\s*(?:var\s+(?:meta|head)|<\/script|\n)/.exec(data);
+  if (!match) {console.error(`No match found for "findIPR"`);
+  return;
+}
   return JSON.parse(match[1]);
+}
+
+function findClientVersion(data: string) {
+	const result = findCfg(data)?.INNERTUBE_CONTEXT_CLIENT_VERSION;
+	if (result && typeof result === "string") {
+		if (result !== DC.clientVersion) {
+			console.error(`current masterchat version ${DC.clientVersion} does not match live ${result}`);
+		}
+		DC.clientVersion = result;
+	}
 }
 
 export function findInitialData(data: string): YTInitialData | undefined {
   const match =
-    /(?:var ytInitialData|window\["ytInitialData"\]) = (.+?);<\/script>/.exec(
+  /(?:window\s*\[\s*["']ytInitialData["']\s*\]|ytInitialData)\s*=\s*({.+?})\s*;\s*(?:var\s+(?:meta|head)|<\/script|\n)/.exec(
       data
     );
-  if (!match) return;
+  if (!match) {console.error(`No match found for "findInitialData"`);
+  return;
+}
   return JSON.parse(match[1]);
+}
+
+function getVideoPrimaryInfoRenderer(results: ResultsResults) {
+	for(const entry of results.contents) {
+		if("videoPrimaryInfoRenderer" in entry) {
+			return entry;
+		}
+	}
+	throw new Error(`Unable to find "videoPrimaryInfoRenderer" ${JSON.stringify(results)}`);
+}
+function getVideoSecondaryInfoRenderer(results: ResultsResults) {
+	for(const entry of results.contents) {
+		if("videoSecondaryInfoRenderer" in entry) {
+			return entry;
+		}
+	}
+	throw new Error(`Unable to find "videoSecondaryInfoRenderer" ${JSON.stringify(results)}`);
 }
 
 export function findEPR(data: string) {
@@ -73,7 +108,10 @@ export async function parseMetadataFromEmbed(html: string) {
   const epr = findEPR(html);
 
   const ps = epr.previewPlayabilityStatus;
-  assertPlayability(ps);
+  if (!epr || !ps) {
+		console.error("missing epr or ps");
+	}
+  assertPlayability(ps, html);
 
   const ep = epr.embedPreview;
 
@@ -104,7 +142,26 @@ export async function parseMetadataFromEmbed(html: string) {
   };
 }
 
+function getMembershipBadge(primaryInfo) {
+	if ("badges" in primaryInfo) {
+		for (const entry of primaryInfo.badges) {
+			if ("metadataBadgeRenderer" in entry && entry.metadataBadgeRenderer.style === "BADGE_STYLE_TYPE_MEMBERS_ONLY") {
+				return true;
+			}
+		}
+	}
+	return false;
+}
+function hasLiveChat(initialData) {
+	const conversationBar = initialData.contents?.twoColumnWatchNextResults?.conversationBar;
+	if (conversationBar && "liveChatRenderer" in conversationBar) {
+		return true;
+	}
+	return false;
+}
+
 export function parseMetadataFromWatch(html: string) {
+  findClientVersion(html);
   const initialData = findInitialData(html)!;
 
   const playabilityStatus = findPlayabilityStatus(html);
@@ -114,15 +171,22 @@ export function parseMetadataFromWatch(html: string) {
   const results =
     initialData.contents?.twoColumnWatchNextResults?.results.results!;
 
-  const primaryInfo = results.contents[0].videoPrimaryInfoRenderer;
-  const videoOwner =
-    results.contents[1].videoSecondaryInfoRenderer.owner.videoOwnerRenderer;
+    const primaryInfo = getVideoPrimaryInfoRenderer(results).videoPrimaryInfoRenderer;
+    const videoOwner = getVideoSecondaryInfoRenderer(results).videoSecondaryInfoRenderer.owner.videoOwnerRenderer;
+    const isMembership = getMembershipBadge(primaryInfo);
+	const hasChat = hasLiveChat(initialData);
 
   const title = runsToString(primaryInfo.title.runs);
   const channelId = videoOwner.navigationEndpoint.browseEndpoint.browseId;
   const channelName = runsToString(videoOwner.title.runs);
   const metadata = parseVideoMetadataFromHtml(html);
-  const isLive = !metadata?.publication?.endDate ?? false;
+  let isLive = false;
+	if (isMembership && hasChat && "viewCount" in primaryInfo) {
+		isLive = true;
+	}
+	if (isMembership === false && hasChat && "viewCount" in primaryInfo) {
+		isLive = primaryInfo.viewCount?.videoViewCountRenderer.isLive ?? false;
+	}
   const isMembersOnly =
     primaryInfo.badges?.some?.(
       (v) =>
