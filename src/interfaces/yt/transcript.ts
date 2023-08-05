@@ -2,118 +2,118 @@ import { YTRunContainer, YTSimpleTextContainer } from "./chat";
 import { YTAccessibilityData } from "./context";
 
 export interface GetTranscriptResponse {
-  responseContext: ResponseContext;
-  actions: Action[];
-  trackingParams: string;
+	responseContext: ResponseContext;
+	actions: Action[];
+	trackingParams: string;
 }
 
 export interface Action {
-  clickTrackingParams: string;
-  updateEngagementPanelAction: UpdateEngagementPanelAction;
+	clickTrackingParams: string;
+	updateEngagementPanelAction: UpdateEngagementPanelAction;
 }
 
 export interface UpdateEngagementPanelAction {
-  targetId: string;
-  content: UpdateEngagementPanelActionContent;
+	targetId: string;
+	content: UpdateEngagementPanelActionContent;
 }
 
 export interface UpdateEngagementPanelActionContent {
-  transcriptRenderer: TranscriptRenderer;
+	transcriptRenderer: TranscriptRenderer;
 }
 
 export interface TranscriptRenderer {
-  trackingParams: string;
-  content: TranscriptRendererContent;
+	trackingParams: string;
+	content: TranscriptRendererContent;
 }
 
 export interface TranscriptRendererContent {
-  transcriptSearchPanelRenderer: TranscriptSearchPanelRenderer;
+	transcriptSearchPanelRenderer: TranscriptSearchPanelRenderer;
 }
 
 export interface TranscriptSearchPanelRenderer {
-  body: Body;
-  footer: Footer;
-  trackingParams: string;
-  targetId: string;
+	body: Body;
+	footer: Footer;
+	trackingParams: string;
+	targetId: string;
 }
 
 export interface Body {
-  transcriptSegmentListRenderer: TranscriptSegmentListRenderer;
+	transcriptSegmentListRenderer: TranscriptSegmentListRenderer;
 }
 
 export interface TranscriptSegmentListRenderer {
-  initialSegments: InitialSegment[];
-  noResultLabel: YTRunContainer;
-  retryLabel: YTRunContainer;
+	initialSegments: InitialSegment[];
+	noResultLabel: YTRunContainer;
+	retryLabel: YTRunContainer;
 }
 
 export interface InitialSegment {
-  transcriptSegmentRenderer: TranscriptSegmentRenderer;
+	transcriptSegmentRenderer: TranscriptSegmentRenderer;
 }
 
 export interface TranscriptSegmentRenderer {
-  startMs: string;
-  endMs: string;
-  snippet: YTRunContainer;
-  startTimeText: YTSimpleTextContainer;
-  trackingParams: string;
-  accessibility: YTAccessibilityData;
+	startMs: string;
+	endMs: string;
+	snippet: YTRunContainer;
+	startTimeText: YTSimpleTextContainer;
+	trackingParams: string;
+	accessibility: YTAccessibilityData;
 }
 
 export interface Footer {
-  transcriptFooterRenderer: TranscriptFooterRenderer;
+	transcriptFooterRenderer: TranscriptFooterRenderer;
 }
 
 export interface TranscriptFooterRenderer {
-  languageMenu: LanguageMenu;
+	languageMenu: LanguageMenu;
 }
 
 export interface LanguageMenu {
-  sortFilterSubMenuRenderer: SortFilterSubMenuRenderer;
+	sortFilterSubMenuRenderer: SortFilterSubMenuRenderer;
 }
 
 export interface SortFilterSubMenuRenderer {
-  subMenuItems: SubMenuItem[];
-  trackingParams: string;
+	subMenuItems: SubMenuItem[];
+	trackingParams: string;
 }
 
 export interface SubMenuItem {
-  title: string;
-  selected: boolean;
-  continuation: Continuation;
-  trackingParams: string;
+	title: string;
+	selected: boolean;
+	continuation: Continuation;
+	trackingParams: string;
 }
 
 export interface Continuation {
-  reloadContinuationData: ReloadContinuationData;
+	reloadContinuationData: ReloadContinuationData;
 }
 
 export interface ReloadContinuationData {
-  continuation: string;
-  clickTrackingParams: string;
+	continuation: string;
+	clickTrackingParams: string;
 }
 
 export interface ResponseContext {
-  visitorData: string;
-  serviceTrackingParams: ServiceTrackingParam[];
-  mainAppWebResponseContext: MainAppWebResponseContext;
-  webResponseContextExtensionData: WebResponseContextExtensionData;
+	visitorData: string;
+	serviceTrackingParams: ServiceTrackingParam[];
+	mainAppWebResponseContext: MainAppWebResponseContext;
+	webResponseContextExtensionData: WebResponseContextExtensionData;
 }
 
 export interface MainAppWebResponseContext {
-  loggedOut: boolean;
+	loggedOut: boolean;
 }
 
 export interface ServiceTrackingParam {
-  service: string;
-  params: Param[];
+	service: string;
+	params: Param[];
 }
 
 export interface Param {
-  key: string;
-  value: string;
+	key: string;
+	value: string;
 }
 
 export interface WebResponseContextExtensionData {
-  hasDecorated: boolean;
+	hasDecorated: boolean;
 }

@@ -7,79 +7,72 @@ const mode = (process.env.NOCK_BACK_MODE as any) || "lockdown";
 const record = setupRecorder({ mode });
 
 async function fetchUpcomingStreams() {
-  const data = await axios.get(
-    "https://holodex.net/api/v2/live?status=live&org=Hololive",
-    {
-      headers: {
-        "X-APIKEY": process.env.HOLODEX_APIKEY || "",
-      },
-    }
-  );
-  return data.data;
+	const data = await axios.get("https://holodex.net/api/v2/live?status=live&org=Hololive", {
+		headers: {
+			"X-APIKEY": process.env.HOLODEX_APIKEY || "",
+		},
+	});
+	return data.data;
 }
 
 describe("normal live chat", () => {
-  let subject: any;
-  let mc: Masterchat;
+	let subject: any;
+	let mc: Masterchat;
 
-  beforeAll(async () => {
-    const { completeRecording, assertScopesFinished } = await record(
-      "wildlife"
-    );
-    const index = await fetchUpcomingStreams();
-    subject = index[Math.round(index.length / 2)];
-    mc = await Masterchat.init(subject.id);
-    completeRecording();
-    assertScopesFinished();
-  });
+	beforeAll(async () => {
+		const { completeRecording, assertScopesFinished } = await record("wildlife");
+		const index = await fetchUpcomingStreams();
+		subject = index[Math.round(index.length / 2)];
+		mc = await Masterchat.init(subject.id);
+		completeRecording();
+		assertScopesFinished();
+	});
 
-  it("context match", async () => {
-    expect(mc.channelId).toBe(subject.channel.id);
-    expect(mc.channelName).toBe(subject.channel.name);
-  }, 60000);
+	it("context match", async () => {
+		expect(mc.channelId).toBe(subject.channel.id);
+		expect(mc.channelName).toBe(subject.channel.name);
+	}, 60000);
 
-  it("can fetch live chat", async () => {
-    expect.assertions(3);
+	it("can fetch live chat", async () => {
+		expect.assertions(3);
 
-    const { completeRecording } = await record("wildlife2");
+		const { completeRecording } = await record("wildlife2");
 
-    const errFn = vitest.fn();
+		const errFn = vitest.fn();
 
-    let times = 0;
-    await mc
-      .on("chats", (chats) => {
-        const textChat = chats.find(
-          (chat) => chat.membership && "text" in chat.message![0]
-        );
-        expect(textChat).toEqual(
-          expect.objectContaining({
-            authorName: expect.any(String),
-            authorChannelId: expect.any(String),
-            authorPhoto: expect.stringMatching(/^https:\/\/yt\d\.ggpht/),
-            contextMenuEndpointParams: expect.any(String),
-            id: expect.any(String),
-            isModerator: expect.any(Boolean),
-            isVerified: expect.any(Boolean),
-            isOwner: expect.any(Boolean),
-            timestamp: expect.any(Date),
-            timestampUsec: expect.stringMatching(/^\d+$/),
-            type: "addChatItemAction",
-            rawMessage: expect.arrayContaining([
-              {
-                text: expect.any(String),
-              },
-            ]),
-          })
-        );
+		let times = 0;
+		await mc
+			.on("chats", (chats) => {
+				const textChat = chats.find((chat) => chat.membership && "text" in chat.message![0]);
+				expect(textChat).toEqual(
+					expect.objectContaining({
+						authorName: expect.any(String),
+						authorChannelId: expect.any(String),
+						authorPhoto: expect.stringMatching(/^https:\/\/yt\d\.ggpht/),
+						contextMenuEndpointParams: expect.any(String),
+						id: expect.any(String),
+						isModerator: expect.any(Boolean),
+						isVerified: expect.any(Boolean),
+						isOwner: expect.any(Boolean),
+						timestamp: expect.any(Date),
+						timestampUsec: expect.stringMatching(/^\d+$/),
+						type: "addChatItemAction",
+						rawMessage: expect.arrayContaining([
+							{
+								text: expect.any(String),
+							},
+						]),
+					})
+				);
 
-        times += 1;
-        if (times >= 2) mc.stop();
-      })
-      .on("error", errFn)
-      .listen({ topChat: false });
+				times += 1;
+				if (times >= 2) mc.stop();
+			})
+			.on("error", errFn)
+			.listen({ topChat: false });
 
-    completeRecording();
+		completeRecording();
 
-    expect(errFn).not.toBeCalled();
-  }, 60000);
+		expect(errFn).not.toBeCalled();
+	}, 60000);
 });

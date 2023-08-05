@@ -1,439 +1,396 @@
 import { setupRecorder } from "nock-record";
 import { expect, it, vitest } from "vitest";
 import {
-  DisabledChatError,
-  InvalidArgumentError,
-  Masterchat,
-  MasterchatOptions,
-  MembersOnlyError,
-  NoPermissionError,
-  NoStreamRecordingError,
-  UnavailableError,
+	DisabledChatError,
+	InvalidArgumentError,
+	Masterchat,
+	MasterchatOptions,
+	MembersOnlyError,
+	NoPermissionError,
+	NoStreamRecordingError,
+	UnavailableError,
 } from "../../src";
 
 const actionsMatcher = expect.arrayContaining([
-  expect.objectContaining({
-    type: expect.any(String),
-  }),
+	expect.objectContaining({
+		type: expect.any(String),
+	}),
 ]);
 
 type SetupObject = {
-  shouldThrow: (obj: unknown) => Promise<void>;
-  shouldEmitActions: () => Promise<void>;
+	shouldThrow: (obj: unknown) => Promise<void>;
+	shouldEmitActions: () => Promise<void>;
 };
 
 function setup(videoId: string): SetupObject;
-function setup(
-  videoId: string,
-  channelId: string,
-  options?: MasterchatOptions
-): SetupObject;
-function setup(
-  videoId: string,
-  channelId?: string,
-  options?: MasterchatOptions
-): SetupObject {
-  const setupMc = async () =>
-    !channelId
-      ? await Masterchat.init(videoId)
-      : new Masterchat(videoId, channelId, options);
+function setup(videoId: string, channelId: string, options?: MasterchatOptions): SetupObject;
+function setup(videoId: string, channelId?: string, options?: MasterchatOptions): SetupObject {
+	const setupMc = async () => (!channelId ? await Masterchat.init(videoId) : new Masterchat(videoId, channelId, options));
 
-  return {
-    shouldThrow(obj: unknown) {
-      const promise = async () => {
-        const mc = await setupMc();
-        await mc
-          .on("data", () => {
-            throw new Error("Should not be called");
-          })
-          .on("error", (err) => {
-            throw err;
-          })
-          .listen();
-      };
-      return expect(promise).rejects.toBeInstanceOf(obj);
-    },
-    shouldEmitActions() {
-      const promise = async () => {
-        const mc = await setupMc();
-        await mc
-          .on("data", (data) => {
-            expect(data.continuation!.token).toBeTruthy();
-            if (mc.isLive ?? true) {
-              expect(data.continuation!.timeoutMs).toBeTruthy();
-            } else {
-              expect(data.continuation!.timeoutMs).toBeUndefined();
-            }
-            expect(data.actions).toEqual(actionsMatcher);
-            mc.stop();
-          })
-          .on("error", (err) => {
-            throw err;
-          })
-          .listen();
-      };
-      return promise();
-    },
-  };
+	return {
+		shouldThrow(obj: unknown) {
+			const promise = async () => {
+				const mc = await setupMc();
+				await mc
+					.on("data", () => {
+						throw new Error("Should not be called");
+					})
+					.on("error", (err) => {
+						throw err;
+					})
+					.listen();
+			};
+			return expect(promise).rejects.toBeInstanceOf(obj);
+		},
+		shouldEmitActions() {
+			const promise = async () => {
+				const mc = await setupMc();
+				await mc
+					.on("data", (data) => {
+						expect(data.continuation!.token).toBeTruthy();
+						if (mc.isLive ?? true) {
+							expect(data.continuation!.timeoutMs).toBeTruthy();
+						} else {
+							expect(data.continuation!.timeoutMs).toBeUndefined();
+						}
+						expect(data.actions).toEqual(actionsMatcher);
+						mc.stop();
+					})
+					.on("error", (err) => {
+						throw err;
+					})
+					.listen();
+			};
+			return promise();
+		},
+	};
 }
 
 const record = setupRecorder({
-  mode: (process.env.NOCK_BACK_MODE as any) || "lockdown",
+	mode: (process.env.NOCK_BACK_MODE as any) || "lockdown",
 });
 
 it(
-  "abortion",
-  async () => {
-    expect.assertions(3);
+	"abortion",
+	async () => {
+		expect.assertions(3);
 
-    const videoId = "425-oc3ZEgg";
+		const videoId = "425-oc3ZEgg";
 
-    const { completeRecording } = await record("abortion");
+		const { completeRecording } = await record("abortion");
 
-    const mc = await Masterchat.init(videoId);
+		const mc = await Masterchat.init(videoId);
 
-    const endFn = vitest.fn();
+		const endFn = vitest.fn();
 
-    let ts1 = 0;
-    await mc
-      .on("actions", (actions) => {
-        ts1 = Date.now();
-        expect(actions).toEqual(actionsMatcher);
-        completeRecording();
-        mc.stop();
-      })
-      .on("end", endFn)
-      .on("error", () => {
-        throw new Error("This must not be happened");
-      })
-      .listen();
+		let ts1 = 0;
+		await mc
+			.on("actions", (actions) => {
+				ts1 = Date.now();
+				expect(actions).toEqual(actionsMatcher);
+				completeRecording();
+				mc.stop();
+			})
+			.on("end", endFn)
+			.on("error", () => {
+				throw new Error("This must not be happened");
+			})
+			.listen();
 
-    const ts2 = Date.now();
-    expect(ts2 - ts1).toBeLessThan(500);
-    expect(endFn).toBeCalled();
-  },
-  20 * 1000
+		const ts2 = Date.now();
+		expect(ts2 - ts1).toBeLessThan(500);
+		expect(endFn).toBeCalled();
+	},
+	20 * 1000
 );
 
 it(
-  "prechat",
-  async () => {
-    expect.assertions(5);
+	"prechat",
+	async () => {
+		expect.assertions(5);
 
-    const videoId = "Y8PUxGDEo2M";
-    const channelId = "UChgTyjG-pdNvxxhdsXfHQ5Q";
+		const videoId = "Y8PUxGDEo2M";
+		const channelId = "UChgTyjG-pdNvxxhdsXfHQ5Q";
 
-    const { completeRecording } = await record("prechat");
+		const { completeRecording } = await record("prechat");
 
-    const mc = await Masterchat.init(videoId);
-    expect(mc.isLive).toBe(true);
-    expect(mc.channelId).toBe(channelId);
+		const mc = await Masterchat.init(videoId);
+		expect(mc.isLive).toBe(true);
+		expect(mc.channelId).toBe(channelId);
 
-    await new Masterchat(videoId, channelId)
-      .once("data", (chats, mc) => {
-        expect(chats.continuation!.token).toBeTruthy();
-        expect(chats.continuation!.timeoutMs).toBeTruthy();
-        expect(chats.actions).toEqual(actionsMatcher);
-        mc.stop();
-      })
-      .listen();
+		await new Masterchat(videoId, channelId)
+			.once("data", (chats, mc) => {
+				expect(chats.continuation!.token).toBeTruthy();
+				expect(chats.continuation!.timeoutMs).toBeTruthy();
+				expect(chats.actions).toEqual(actionsMatcher);
+				mc.stop();
+			})
+			.listen();
 
-    completeRecording();
-  },
-  20 * 1000
+		completeRecording();
+	},
+	20 * 1000
 );
 
 it(
-  "premiere prechat",
-  async () => {
-    expect.assertions(7);
+	"premiere prechat",
+	async () => {
+		expect.assertions(7);
 
-    const videoId = "5KsXVs8Vg7U";
-    const channelId = "UCqm3BQLlJfvkTsX_hvm0UmA";
+		const videoId = "5KsXVs8Vg7U";
+		const channelId = "UCqm3BQLlJfvkTsX_hvm0UmA";
 
-    const { completeRecording } = await record("premiere");
+		const { completeRecording } = await record("premiere");
 
-    const mc = await Masterchat.init(videoId);
-    expect(mc.isLive).toBe(true);
-    expect(mc.channelId).toBe(channelId);
-    expect(mc.channelName).toBe("Watame Ch. 角巻わため");
-    expect(mc.title).toBe("Everlasting Soul／角巻わため【original】");
+		const mc = await Masterchat.init(videoId);
+		expect(mc.isLive).toBe(true);
+		expect(mc.channelId).toBe(channelId);
+		expect(mc.channelName).toBe("Watame Ch. 角巻わため");
+		expect(mc.title).toBe("Everlasting Soul／角巻わため【original】");
 
-    await setup(videoId, channelId, { mode: "live" }).shouldEmitActions();
+		await setup(videoId, channelId, { mode: "live" }).shouldEmitActions();
 
-    completeRecording();
-  },
-  20 * 1000
+		completeRecording();
+	},
+	20 * 1000
 );
 
 it(
-  "emojis in video title",
-  async () => {
-    expect.assertions(1);
+	"emojis in video title",
+	async () => {
+		expect.assertions(1);
 
-    const videoId = "qz8dg-38NZY";
+		const videoId = "qz8dg-38NZY";
 
-    const { completeRecording } = await record("emojis_in_title");
+		const { completeRecording } = await record("emojis_in_title");
 
-    const mc = await Masterchat.init(videoId);
-    expect(mc.title).toBe(
-      "🔴Irish Pub Music ♫♫ JOIN THE SESSION | Traditional Irish Music Session"
-    );
+		const mc = await Masterchat.init(videoId);
+		expect(mc.title).toBe("🔴Irish Pub Music ♫♫ JOIN THE SESSION | Traditional Irish Music Session");
 
-    completeRecording();
-  },
-  20 * 1000
+		completeRecording();
+	},
+	20 * 1000
 );
 
 it(
-  "live chat",
-  async () => {
-    expect.assertions(8);
+	"live chat",
+	async () => {
+		expect.assertions(8);
 
-    const videoId = "Y_L8TusmUsU";
-    const channelId = "UC3n5uGu18FoCy23ggWWp8tA";
-    const { completeRecording } = await record("livechat");
+		const videoId = "Y_L8TusmUsU";
+		const channelId = "UC3n5uGu18FoCy23ggWWp8tA";
+		const { completeRecording } = await record("livechat");
 
-    const mc = await Masterchat.init(videoId);
-    expect(mc.isLive).toBe(true);
-    expect(mc.channelId).toBe(channelId);
-    expect(mc.title).toBe("【KARAOKE】Early Birthday Tunes !!!");
-    expect(mc.channelName).toBe("Nanashi Mumei Ch. hololive-EN");
+		const mc = await Masterchat.init(videoId);
+		expect(mc.isLive).toBe(true);
+		expect(mc.channelId).toBe(channelId);
+		expect(mc.title).toBe("【KARAOKE】Early Birthday Tunes !!!");
+		expect(mc.channelName).toBe("Nanashi Mumei Ch. hololive-EN");
 
-    await setup(videoId, channelId).shouldEmitActions();
-    await setup(videoId, channelId, { mode: "replay" }).shouldThrow(
-      DisabledChatError
-    );
+		await setup(videoId, channelId).shouldEmitActions();
+		await setup(videoId, channelId, { mode: "replay" }).shouldThrow(DisabledChatError);
 
-    completeRecording();
-  },
-  20 * 1000
+		completeRecording();
+	},
+	20 * 1000
 );
 
 it(
-  "replay chat",
-  async () => {
-    expect.assertions(11);
+	"replay chat",
+	async () => {
+		expect.assertions(11);
 
-    const videoId = "mLVSjBoLX5o";
-    const channelId = "UCDqI2jOz0weumE8s7paEk6g";
+		const videoId = "mLVSjBoLX5o";
+		const channelId = "UCDqI2jOz0weumE8s7paEk6g";
 
-    const { completeRecording } = await record("replay");
+		const { completeRecording } = await record("replay");
 
-    const mc = await Masterchat.init(videoId);
-    expect(mc.isLive).toBe(false);
-    expect(mc.channelId).toBe(channelId);
-    expect(mc.channelName).toBe("Roboco Ch. - ロボ子");
-    expect(mc.title).toBe(
-      "【＃ド深夜ホラー】UNOができないので恒例ホラー👻【ホロライブ/ロボ子さん/兎田ぺこら/獅白ぼたん/星街すいせい】"
-    );
+		const mc = await Masterchat.init(videoId);
+		expect(mc.isLive).toBe(false);
+		expect(mc.channelId).toBe(channelId);
+		expect(mc.channelName).toBe("Roboco Ch. - ロボ子");
+		expect(mc.title).toBe(
+			"【＃ド深夜ホラー】UNOができないので恒例ホラー👻【ホロライブ/ロボ子さん/兎田ぺこら/獅白ぼたん/星街すいせい】"
+		);
 
-    await setup(videoId, channelId).shouldEmitActions();
-    await setup(videoId, channelId, { mode: "live" }).shouldThrow(
-      DisabledChatError
-    );
-    await setup(videoId, channelId, { mode: "replay" }).shouldEmitActions();
+		await setup(videoId, channelId).shouldEmitActions();
+		await setup(videoId, channelId, { mode: "live" }).shouldThrow(DisabledChatError);
+		await setup(videoId, channelId, { mode: "replay" }).shouldEmitActions();
 
-    completeRecording();
-  },
-  20 * 1000
+		completeRecording();
+	},
+	20 * 1000
 );
 
 it(
-  "abandoned stream",
-  async () => {
-    expect.assertions(4);
+	"abandoned stream",
+	async () => {
+		expect.assertions(4);
 
-    const videoId = "N5XoLCMQrFY";
-    const channelId = "UCb5JxV6vKlYVknoJB8TnyYg";
-    const { completeRecording } = await record("abandoned");
+		const videoId = "N5XoLCMQrFY";
+		const channelId = "UCb5JxV6vKlYVknoJB8TnyYg";
+		const { completeRecording } = await record("abandoned");
 
-    const mc = await Masterchat.init(videoId);
-    expect(mc.isLive).toBe(true);
+		const mc = await Masterchat.init(videoId);
+		expect(mc.isLive).toBe(true);
 
-    await setup(videoId, channelId, { mode: "live" }).shouldEmitActions();
+		await setup(videoId, channelId, { mode: "live" }).shouldEmitActions();
 
-    completeRecording();
-  },
-  20 * 1000
+		completeRecording();
+	},
+	20 * 1000
 );
 
 it(
-  "members-only stream",
-  async () => {
-    expect.assertions(3);
+	"members-only stream",
+	async () => {
+		expect.assertions(3);
 
-    const videoId = "n5cIlKx1hMQ";
-    const channelId = "UCdn5BQ06XqgXoAxIhbqw5Rg";
+		const videoId = "n5cIlKx1hMQ";
+		const channelId = "UCdn5BQ06XqgXoAxIhbqw5Rg";
 
-    const { completeRecording } = await record("members_only");
+		const { completeRecording } = await record("members_only");
 
-    await setup(videoId).shouldThrow(MembersOnlyError);
-    await setup(videoId, channelId, { mode: "live" }).shouldThrow(
-      MembersOnlyError
-    );
-    await setup(videoId, channelId, { mode: "replay" }).shouldThrow(
-      DisabledChatError
-    );
+		await setup(videoId).shouldThrow(MembersOnlyError);
+		await setup(videoId, channelId, { mode: "live" }).shouldThrow(MembersOnlyError);
+		await setup(videoId, channelId, { mode: "replay" }).shouldThrow(DisabledChatError);
 
-    completeRecording();
-  },
-  20 * 1000
+		completeRecording();
+	},
+	20 * 1000
 );
 
 it(
-  "members-only archive with no replay chat available",
-  async () => {
-    expect.assertions(5);
+	"members-only archive with no replay chat available",
+	async () => {
+		expect.assertions(5);
 
-    const videoId = "hzpbFlE_TVg";
-    const channelId = "UC1DCedRgGHBdm81E1llLhOQ";
+		const videoId = "hzpbFlE_TVg";
+		const channelId = "UC1DCedRgGHBdm81E1llLhOQ";
 
-    const { completeRecording } = await record("members_only_no_replay");
+		const { completeRecording } = await record("members_only_no_replay");
 
-    await setup(videoId).shouldThrow(MembersOnlyError);
-    await setup(videoId, channelId, { mode: "live" }).shouldThrow(
-      DisabledChatError
-    );
+		await setup(videoId).shouldThrow(MembersOnlyError);
+		await setup(videoId, channelId, { mode: "live" }).shouldThrow(DisabledChatError);
 
-    // why though
-    await setup(videoId, channelId, { mode: "replay" }).shouldEmitActions();
+		// why though
+		await setup(videoId, channelId, { mode: "replay" }).shouldEmitActions();
 
-    completeRecording();
-  },
-  20 * 1000
+		completeRecording();
+	},
+	20 * 1000
 );
 
 it(
-  "pre-chat disabled",
-  async () => {
-    expect.assertions(4);
+	"pre-chat disabled",
+	async () => {
+		expect.assertions(4);
 
-    const videoId = "lN_nMOfvynw";
-    const channelId = "UCmbs8T6MWqUHP1tIQvSgKrg";
-    const { completeRecording } = await record("prechat_disabled");
+		const videoId = "lN_nMOfvynw";
+		const channelId = "UCmbs8T6MWqUHP1tIQvSgKrg";
+		const { completeRecording } = await record("prechat_disabled");
 
-    const mc = await Masterchat.init(videoId);
-    expect(mc.isLive).toBe(true);
-    expect(mc.channelId).toBe(channelId);
+		const mc = await Masterchat.init(videoId);
+		expect(mc.isLive).toBe(true);
+		expect(mc.channelId).toBe(channelId);
 
-    await setup(videoId, channelId, { mode: "live" }).shouldThrow(
-      DisabledChatError
-    );
-    await setup(videoId, channelId, { mode: "replay" }).shouldThrow(
-      DisabledChatError
-    );
+		await setup(videoId, channelId, { mode: "live" }).shouldThrow(DisabledChatError);
+		await setup(videoId, channelId, { mode: "replay" }).shouldThrow(DisabledChatError);
 
-    completeRecording();
-  },
-  20 * 1000
+		completeRecording();
+	},
+	20 * 1000
 );
 
 it(
-  "archived stream with chat replay being prepared",
-  async () => {
-    expect.assertions(3);
+	"archived stream with chat replay being prepared",
+	async () => {
+		expect.assertions(3);
 
-    const videoId = "K769BpJroos";
-    const channelId = "UC8rcEBzJSleTkf_-agPM20g";
-    const { completeRecording } = await record("no_chat_replay");
+		const videoId = "K769BpJroos";
+		const channelId = "UC8rcEBzJSleTkf_-agPM20g";
+		const { completeRecording } = await record("no_chat_replay");
 
-    const mc = await Masterchat.init(videoId);
-    expect(mc.isLive).toBe(false);
+		const mc = await Masterchat.init(videoId);
+		expect(mc.isLive).toBe(false);
 
-    await setup(videoId, channelId, { mode: "live" }).shouldThrow(
-      DisabledChatError
-    );
-    await setup(videoId, channelId, { mode: "replay" }).shouldThrow(
-      DisabledChatError
-    );
+		await setup(videoId, channelId, { mode: "live" }).shouldThrow(DisabledChatError);
+		await setup(videoId, channelId, { mode: "replay" }).shouldThrow(DisabledChatError);
 
-    completeRecording();
-  },
-  20 * 1000
+		completeRecording();
+	},
+	20 * 1000
 );
 
 it(
-  "unarchived stream",
-  async () => {
-    expect.assertions(3);
+	"unarchived stream",
+	async () => {
+		expect.assertions(3);
 
-    const videoId = "xCKYp2lxywE";
-    const channelId = "UCtjQoCilYbnxUXquXcVU3uA";
-    const { completeRecording } = await record("unarchived");
+		const videoId = "xCKYp2lxywE";
+		const channelId = "UCtjQoCilYbnxUXquXcVU3uA";
+		const { completeRecording } = await record("unarchived");
 
-    await setup(videoId).shouldThrow(NoStreamRecordingError);
-    await setup(videoId, channelId).shouldThrow(DisabledChatError);
-    await setup(videoId, channelId, { mode: "replay" }).shouldThrow(
-      DisabledChatError
-    );
+		await setup(videoId).shouldThrow(NoStreamRecordingError);
+		await setup(videoId, channelId).shouldThrow(DisabledChatError);
+		await setup(videoId, channelId, { mode: "replay" }).shouldThrow(DisabledChatError);
 
-    completeRecording();
-  },
-  20 * 1000
+		completeRecording();
+	},
+	20 * 1000
 );
 
 it(
-  "private stream",
-  async () => {
-    expect.assertions(3);
+	"private stream",
+	async () => {
+		expect.assertions(3);
 
-    const videoId = "Yhkrk9K2KpY";
-    const channelId = "UCES4K104k-D2HthE46z9VHQ";
-    const { completeRecording } = await record("private");
+		const videoId = "Yhkrk9K2KpY";
+		const channelId = "UCES4K104k-D2HthE46z9VHQ";
+		const { completeRecording } = await record("private");
 
-    await setup(videoId).shouldThrow(NoPermissionError);
-    await setup(videoId, channelId, { mode: "live" }).shouldThrow(
-      NoPermissionError
-    );
-    await setup(videoId, channelId, { mode: "replay" }).shouldThrow(
-      NoPermissionError
-    );
+		await setup(videoId).shouldThrow(NoPermissionError);
+		await setup(videoId, channelId, { mode: "live" }).shouldThrow(NoPermissionError);
+		await setup(videoId, channelId, { mode: "replay" }).shouldThrow(NoPermissionError);
 
-    completeRecording();
-  },
-  20 * 1000
+		completeRecording();
+	},
+	20 * 1000
 );
 
 it(
-  "deleted stream",
-  async () => {
-    expect.assertions(3);
+	"deleted stream",
+	async () => {
+		expect.assertions(3);
 
-    const videoId = "YEAINgb2xfo";
-    const channelId = "UCgmPnx-EEeOrZSg5Tiw7ZRQ";
-    const { completeRecording } = await record("deleted");
+		const videoId = "YEAINgb2xfo";
+		const channelId = "UCgmPnx-EEeOrZSg5Tiw7ZRQ";
+		const { completeRecording } = await record("deleted");
 
-    await setup(videoId).shouldThrow(UnavailableError);
-    await setup(videoId, channelId, { mode: "live" }).shouldThrow(
-      UnavailableError
-    );
-    await setup(videoId, channelId, { mode: "replay" }).shouldThrow(
-      UnavailableError
-    );
+		await setup(videoId).shouldThrow(UnavailableError);
+		await setup(videoId, channelId, { mode: "live" }).shouldThrow(UnavailableError);
+		await setup(videoId, channelId, { mode: "replay" }).shouldThrow(UnavailableError);
 
-    completeRecording();
-  },
-  20 * 1000
+		completeRecording();
+	},
+	20 * 1000
 );
 
 it(
-  "invalid video and channel",
-  async () => {
-    expect.assertions(3);
+	"invalid video and channel",
+	async () => {
+		expect.assertions(3);
 
-    const { completeRecording } = await record("invalid_video_id");
+		const { completeRecording } = await record("invalid_video_id");
 
-    await setup("invalid_video_id").shouldThrow(InvalidArgumentError);
+		await setup("invalid_video_id").shouldThrow(InvalidArgumentError);
 
-    await setup("invalid_video_id", "UCtjQoCilYbnxUXquXcVU3uA").shouldThrow(
-      InvalidArgumentError
-    );
-    await setup("invalid_video_id", "invalid_channel_id", {
-      mode: "replay",
-    }).shouldThrow(InvalidArgumentError);
+		await setup("invalid_video_id", "UCtjQoCilYbnxUXquXcVU3uA").shouldThrow(InvalidArgumentError);
+		await setup("invalid_video_id", "invalid_channel_id", {
+			mode: "replay",
+		}).shouldThrow(InvalidArgumentError);
 
-    completeRecording();
-  },
-  20 * 1000
+		completeRecording();
+	},
+	20 * 1000
 );

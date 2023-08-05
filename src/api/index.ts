@@ -77,27 +77,22 @@
 import { YTLiveChatServiceEndpointContainer } from "../interfaces/yt/chat";
 
 function findParams(obj: any): string | undefined {
-  const keys = Object.keys(obj).filter(
-    (key) => !["clickTrackingParams", "commandMetadata"].includes(key)
-  );
+	const keys = Object.keys(obj).filter((key) => !["clickTrackingParams", "commandMetadata"].includes(key));
 
-  const key = keys[0];
+	const key = keys[0];
 
-  if (key === "confirmDialogEndpoint") {
-    return findParams(
-      obj[keys[0]].content.confirmDialogRenderer.confirmButton.buttonRenderer
-        .serviceEndpoint
-    );
-  }
+	if (key === "confirmDialogEndpoint") {
+		return findParams(obj[keys[0]].content.confirmDialogRenderer.confirmButton.buttonRenderer.serviceEndpoint);
+	}
 
-  const params = obj[key]?.params as string | undefined;
-  return params;
+	const params = obj[key]?.params as string | undefined;
+	return params;
 }
 
 export function buildMeta(endpoint: YTLiveChatServiceEndpointContainer) {
-  return {
-    isPost: endpoint.commandMetadata.webCommandMetadata.sendPost,
-    url: endpoint.commandMetadata.webCommandMetadata.apiUrl,
-    params: findParams(endpoint)!,
-  };
+	return {
+		isPost: endpoint.commandMetadata.webCommandMetadata.sendPost,
+		url: endpoint.commandMetadata.webCommandMetadata.apiUrl,
+		params: findParams(endpoint)!,
+	};
 }

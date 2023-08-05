@@ -3,18 +3,16 @@ import { Masterchat, stringify } from "masterchat";
 const mc = await Masterchat.init("oyxvhJW1Cf8");
 
 mc.on("chat", (chat) => {
-  console.log(`${chat.authorName}: ${stringify(chat.message)}`);
+	console.log(`${chat.authorName}: ${stringify(chat.message)}`);
 });
 
 mc.on("actions", (actions) => {
-  const superchats = actions.filter(
-    (action) => action.type === "addSuperChatItemAction"
-  );
+	const superchats = actions.filter((action) => action.type === "addSuperChatItemAction");
 
-  for (const sc of superchats) {
-    const label = `SC ${sc.amount} ${sc.currency}`;
-    console.log(`[${label}] ${sc.authorName}: ${stringify(sc.message)}`);
-  }
+	for (const sc of superchats) {
+		const label = `SC ${sc.amount} ${sc.currency}`;
+		console.log(`[${label}] ${sc.authorName}: ${stringify(sc.message)}`);
+	}
 });
 
 mc.listen();

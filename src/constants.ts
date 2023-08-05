@@ -1,12 +1,12 @@
 import { hextou8 } from "./protobuf/util";
 
 function h(b: TemplateStringsArray): string {
-  return new TextDecoder().decode(hextou8(b.raw[0]));
+	return new TextDecoder().decode(hextou8(b.raw[0]));
 }
 
 export const DH = {
-  "Accept-Language": "en",
-  "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/115.0.0.0 Safari/537.36",
+	"Accept-Language": "en",
+	"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/115.0.0.0 Safari/537.36",
 };
 export const DC = { clientName: "WEB", clientVersion: "2.20230801.01.00" };
 
@@ -20,8 +20,7 @@ export const EP_LCA = "/youtubei/v1/live_chat/live_chat_action?key=" + DAK;
 export const EP_MU = "/youtubei/v1/live_chat/manage_user?key=" + DAK;
 export const EP_GTS = "/youtubei/v1/get_transcript?key=" + DAK;
 export const EP_NXT = "/youtubei/v1/next?key=" + DAK;
-export const EP_GICM =
-  "/youtubei/v1/live_chat/get_item_context_menu?key=" + DAK;
+export const EP_GICM = "/youtubei/v1/live_chat/get_item_context_menu?key=" + DAK;
 
 export const SASH = "SAPISIDHASH";
 export const XO = "X-Origin";
