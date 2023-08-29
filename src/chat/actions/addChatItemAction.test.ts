@@ -3,6 +3,7 @@ import { expect, it } from "vitest";
 import { YTLiveChatViewerEngagementMessageRenderer } from "../../interfaces/yt/chat";
 import { stringify } from "../../utils";
 import { parseLiveChatViewerEngagementMessageRenderer } from "./addChatItemAction";
+import { ItemActionTypes } from "../../interfaces";
 
 it("can parse poll", () => {
 	const payload: YTLiveChatViewerEngagementMessageRenderer = {
@@ -104,7 +105,7 @@ it("can parse poll", () => {
 	};
 	const result = parseLiveChatViewerEngagementMessageRenderer(payload);
 
-	assert(result?.type === "addPollResultAction");
+	assert(result?.type === ItemActionTypes.addPollResultAction);
 
 	expect(stringify(result.question!)).toBe("好きな子からもらいたいのはどっち？🍫💕");
 	expect(result.total).toBe("463");
@@ -134,7 +135,7 @@ it("can parse poll missing question", () => {
 	};
 	const result = parseLiveChatViewerEngagementMessageRenderer(payload);
 
-	assert(result?.type === "addPollResultAction");
+	assert(result?.type === ItemActionTypes.addPollResultAction);
 
 	expect(stringify(result.question!)).toBeUndefined();
 	expect(result.total).toBe("637");

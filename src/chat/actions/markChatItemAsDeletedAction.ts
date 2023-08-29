@@ -1,4 +1,4 @@
-import { MarkChatItemAsDeletedAction } from "../../interfaces/actions";
+import { exportActionTypes, MarkChatItemAsDeletedAction } from "../../interfaces/actions";
 import { YTMarkChatItemAsDeletedAction } from "../../interfaces/yt/chat";
 import { debugLog } from "../../utils";
 
@@ -20,11 +20,11 @@ export function parseMarkChatItemAsDeletedAction(payload: YTMarkChatItemAsDelete
 	const retracted = statusText === "[message retracted]";
 
 	const parsed: MarkChatItemAsDeletedAction = {
-		type: "markChatItemAsDeletedAction",
+		type: exportActionTypes.markChatItemAsDeletedAction,
 		retracted,
 		targetId: payload.targetItemId,
 		executor,
-		timestamp: new Date(),
+		timestamp: Date.now(),
 	};
 	return parsed;
 }

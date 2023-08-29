@@ -1,11 +1,11 @@
-import { ShowTooltipAction } from "../../interfaces/actions";
+import { exportActionTypes, ShowTooltipAction } from "../../interfaces/actions";
 import { YTShowLiveChatTooltipCommand } from "../../interfaces/yt/chat";
 
 export function parseShowLiveChatTooltipCommand(payload: YTShowLiveChatTooltipCommand) {
 	const rdr = payload["tooltip"]["tooltipRenderer"];
 
 	const parsed: ShowTooltipAction = {
-		type: "showTooltipAction",
+		type: exportActionTypes.showTooltipAction,
 		// live-chat-banner
 		targetId: rdr.targetId,
 		// { "runs": [{ "text": "Click to show less" }] }

@@ -1,8 +1,61 @@
-import { YTThumbnailList } from "../interfaces/yt/chat";
-import { Color } from "../interfaces/misc";
+import {
+	YTAction,
+	YTLiveChatMembershipItemRenderer,
+	YTLiveChatPaidMessageRenderer,
+	YTLiveChatPaidStickerRenderer,
+	YTLiveChatPollRenderer,
+	YTLiveChatSponsorshipsGiftPurchaseAnnouncementRenderer,
+	YTLiveChatSponsorshipsHeaderRenderer,
+	YTLiveChatTextMessageRenderer,
+	YTLiveChatTickerPaidMessageItemRenderer,
+	YTLiveChatTickerPaidStickerItemRenderer,
+	YTLiveChatTickerSponsorItemRenderer,
+	YTThumbnailList,
+} from "../interfaces/yt/chat";
+import { tsToNumber } from "../utils";
 
 export function pickThumbUrl(thumbList: YTThumbnailList): string {
-	return thumbList.thumbnails[thumbList.thumbnails.length - 1].url;
+	const fullThumbnail = thumbList.thumbnails[0].url;
+	if (fullThumbnail.indexOf("=") > -1) {
+		return fullThumbnail.split("=")[0];
+	}
+	return fullThumbnail;
+}
+
+export class BackupTimestamp {
+	private timestamp = Date.now();
+
+	get() {
+		return this.timestamp;
+	}
+
+	set(timestampUsec: string) {
+		this.timestamp = tsToNumber(timestampUsec);
+	}
+}
+
+export function findUnexpectedProperties(
+	expectedProperties: string[],
+	renderer:
+		| YTLiveChatTextMessageRenderer
+		| YTLiveChatPaidMessageRenderer
+		| YTLiveChatPaidStickerRenderer
+		| YTLiveChatMembershipItemRenderer
+		| YTLiveChatSponsorshipsGiftPurchaseAnnouncementRenderer
+		| YTLiveChatSponsorshipsHeaderRenderer
+		| YTLiveChatPollRenderer
+		| YTLiveChatPollRenderer["header"]["pollHeaderRenderer"]
+		| YTLiveChatTickerPaidMessageItemRenderer
+		| YTLiveChatTickerPaidStickerItemRenderer
+		| YTLiveChatTickerSponsorItemRenderer
+) {
+	const unexpectedProperties: Record<string, unknown> = {};
+	for (const [property, value] of Object.entries(renderer)) {
+		if (expectedProperties.includes(property) === false) {
+			unexpectedProperties[property] = value;
+		}
+	}
+	return unexpectedProperties;
 }
 
 export function parseColorCode(code: number): string {

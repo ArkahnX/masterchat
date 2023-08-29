@@ -1,136 +1,159 @@
 import { unknown } from "..";
-import {
-	AddBannerAction,
-	AddIncomingRaidBannerAction,
-	AddOutgoingRaidBannerAction,
-	AddProductBannerAction,
-} from "../../interfaces/actions";
+import { ColorName } from "../../interfaces";
+import { AddBannerAction, AddIncomingRaidBannerAction, AddOutgoingRaidBannerAction } from "../../interfaces/Superchats/actions";
+import { ItemActionTypes, AddProductBannerAction, exportActionTypes } from "../../interfaces/actions";
 import { YTAddBannerToLiveChatCommand } from "../../interfaces/yt/chat";
-import { debugLog, endpointToUrl, stringify, tsToDate } from "../../utils";
+import { debugLog, endpointToUrl, getEmojis, stringify, tsTextToSeconds, tsToNumber } from "../../utils";
 import { parseBadges } from "../badge";
-import { pickThumbUrl } from "../utils";
+import { BackupTimestamp, pickThumbUrl } from "../utils";
 
-export function parseAddBannerToLiveChatCommand(payload: YTAddBannerToLiveChatCommand) {
+export function parseAddBannerToLiveChatCommand(payload: YTAddBannerToLiveChatCommand, backupTimestamp: BackupTimestamp) {
 	// add pinned item
 	const bannerRdr = payload["bannerRenderer"]["liveChatBannerRenderer"];
-
 	if (bannerRdr.header && bannerRdr.header.liveChatBannerHeaderRenderer.icon.iconType !== "KEEP") {
 		debugLog("[action required] Unknown icon type (addBannerToLiveChatCommand)", JSON.stringify(bannerRdr.header));
 	}
-
+	
 	// banner
 	const actionId = bannerRdr.actionId;
 	const targetId = bannerRdr.targetId;
 	const viewerIsCreator = bannerRdr.viewerIsCreator;
 	const isStackable = bannerRdr.isStackable;
-
+	
 	// contents
 	const contents = bannerRdr.contents;
-
+	
 	if ("liveChatTextMessageRenderer" in contents) {
-		const rdr = contents.liveChatTextMessageRenderer;
-		const id = rdr.id;
-		const message = rdr.message.runs;
-		const timestampUsec = rdr.timestampUsec;
-		const timestamp = tsToDate(timestampUsec);
-		const authorName = stringify(rdr.authorName);
-		const authorPhoto = pickThumbUrl(rdr.authorPhoto);
-		const authorChannelId = rdr.authorExternalChannelId;
-		const { isVerified, isOwner, isModerator, membership } = parseBadges(rdr);
+		const renderer = contents.liveChatTextMessageRenderer;
+		const id = renderer.id;
+		const message = stringify(renderer.message.runs);
+		const emotes = getEmojis(renderer.message.runs);
+		const timestampUsec = renderer.timestampUsec;
+		backupTimestamp.set(timestampUsec);
+		const timestamp = tsToNumber(timestampUsec);
+		const authorName = stringify(renderer.authorName);
+		const authorPhoto = pickThumbUrl(renderer.authorPhoto);
+		const authorChannelId = renderer.authorExternalChannelId;
+		const authorBadges = parseBadges(renderer);
+		const timestampText = tsTextToSeconds(renderer.timestampText);
 
 		// header
-		const header = bannerRdr.header!.liveChatBannerHeaderRenderer;
-		const title = header.text.runs;
+		const header = bannerRdr.header?.liveChatBannerHeaderRenderer;
+		const title = (header && stringify(header.text.runs)) || undefined;
 
 		if (!authorName) {
-			debugLog("[action required] Empty authorName found at addBannerToLiveChatCommand", JSON.stringify(rdr));
+			debugLog("[action required] Empty authorName found at addBannerToLiveChatCommand", JSON.stringify(renderer));
 		}
 
 		const parsed: AddBannerAction = {
-			type: "addBannerAction",
-			actionId,
-			targetId,
+			type: exportActionTypes.addBannerAction,
 			id,
-			title,
-			message,
-			timestampUsec,
 			timestamp,
+			timestampText,
 			authorName,
 			authorPhoto,
 			authorChannelId,
-			isVerified,
-			isOwner,
-			isModerator,
-			membership,
-			viewerIsCreator,
-			contextMenuEndpointParams: rdr.contextMenuEndpoint?.liveChatItemContextMenuEndpoint.params,
+			authorBadges,
+			title,
+			message,
+			emotes,
+			// ...bannerRdr
+			// actionId,
+			// targetId,
+			// id,
+			// title,
+			// message,
+			// timestampUsec,
+			// timestamp,
+			// authorName,
+			// authorPhoto,
+			// authorChannelId,
+			// isVerified,
+			// isOwner,
+			// isModerator,
+			// membership,
+			// viewerIsCreator,
+			// contextMenuEndpointParams: rdr.contextMenuEndpoint?.liveChatItemContextMenuEndpoint.params,
 		};
 		return parsed;
 	} else if ("liveChatBannerRedirectRenderer" in contents) {
-		const rdr = contents.liveChatBannerRedirectRenderer;
-		const targetVideoId =
-			"watchEndpoint" in rdr.inlineActionButton.buttonRenderer.command
-				? rdr.inlineActionButton.buttonRenderer.command.watchEndpoint.videoId
+		const renderer = contents.liveChatBannerRedirectRenderer;
+		const videoId =
+			"watchEndpoint" in renderer.inlineActionButton.buttonRenderer.command
+				? renderer.inlineActionButton.buttonRenderer.command.watchEndpoint.videoId
 				: undefined;
 
-		const photo = pickThumbUrl(rdr.authorPhoto);
+		const authorPhoto = pickThumbUrl(renderer.authorPhoto);
 
-		if (targetVideoId) {
+		if (videoId) {
 			// Outgoing
-			const targetName = rdr.bannerMessage.runs[1].text;
+			const timestamp = backupTimestamp.get();
+			const authorName = renderer.bannerMessage.runs[1].text;
 			const payload: AddOutgoingRaidBannerAction = {
-				type: "addOutgoingRaidBannerAction",
-				actionId,
-				targetId,
-				targetName,
-				targetPhoto: photo,
-				targetVideoId,
+				type: exportActionTypes.addOutgoingRaidBannerAction,
+				id: bannerRdr.actionId,
+				timestamp,
+				authorName,
+				authorPhoto,
+				color:ColorName.raid,
+				videoId,
+				// ...bannerRdr
+				// actionId,
+				// targetId,
 			};
 			return payload;
 		} else {
 			// Incoming
-			const sourceName = rdr.bannerMessage.runs[0].text;
+			const timestamp = backupTimestamp.get();
+			const authorName = renderer.bannerMessage.runs[0].text;
 			const payload: AddIncomingRaidBannerAction = {
-				type: "addIncomingRaidBannerAction",
-				actionId,
-				targetId,
-				sourceName,
-				sourcePhoto: photo,
+				type: exportActionTypes.addIncomingRaidBannerAction,
+				id: bannerRdr.actionId,
+				timestamp,
+				authorName,
+				authorPhoto,
+				color:ColorName.raid,
+				// ...bannerRdr
+				// actionId,
+				// targetId,
 			};
 			return payload;
 		}
 	} else if ("liveChatProductItemRenderer" in contents) {
-		const rdr = contents.liveChatProductItemRenderer;
-		const title = rdr.title;
-		const description = rdr.accessibilityTitle;
-		const thumbnail = rdr.thumbnail.thumbnails[0].url;
-		const price = rdr.price;
-		const vendorName = rdr.vendorName;
-		const creatorMessage = rdr.creatorMessage;
-		const creatorName = rdr.creatorName;
-		const authorPhoto = pickThumbUrl(rdr.authorPhoto);
-		const url = endpointToUrl(rdr.onClickCommand)!;
+		const timestamp = backupTimestamp.get();
+		const renderer = contents.liveChatProductItemRenderer;
+		const title = renderer.title;
+		const description = renderer.accessibilityTitle;
+		const thumbnail = renderer.thumbnail.thumbnails[0].url;
+		const price = renderer.price;
+		const vendorName = renderer.vendorName;
+		const creatorMessage = renderer.creatorMessage;
+		const creatorName = renderer.creatorName;
+		const authorPhoto = pickThumbUrl(renderer.authorPhoto);
+		const url = endpointToUrl(renderer.onClickCommand);
 		if (!url) {
-			debugLog(`Empty url at liveChatProductItemRenderer: ${JSON.stringify(rdr)}`);
+			debugLog(`Empty url at liveChatProductItemRenderer: ${JSON.stringify(renderer)}`);
 		}
-		const dialogMessage = rdr.informationDialog.liveChatDialogRenderer.dialogMessages;
-		const isVerified = rdr.isVerified;
+		const dialogMessage = renderer.informationDialog.liveChatDialogRenderer.dialogMessages;
+		const isVerified = renderer.isVerified;
 		const payload: AddProductBannerAction = {
-			type: "addProductBannerAction",
-			actionId,
+			type: exportActionTypes.addProductBannerAction,
+			id: actionId,
 			targetId,
-			viewerIsCreator,
-			isStackable,
-			title,
-			description,
-			thumbnail,
-			price,
-			vendorName,
-			creatorMessage,
+			timestamp,
 			creatorName,
 			authorPhoto,
-			url,
+			creatorMessage,
+			title,
+			description,
 			dialogMessage,
+			vendorName,
+			// ...bannerRdr
+			thumbnail,
+			price,
+			url,
+			isStackable,
+			viewerIsCreator,
 			isVerified,
 		};
 		return payload;

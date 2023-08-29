@@ -1,9 +1,10 @@
-import { ShowPanelAction, ShowPollPanelAction } from "../../interfaces/actions";
+import { ColorName } from "../../interfaces";
+import { exportActionTypes, ShowPanelAction, ShowPollPanelAction } from "../../interfaces/actions";
 import { YTLiveChatPollRenderer, YTShowLiveChatActionPanelAction } from "../../interfaces/yt/chat";
 import { debugLog } from "../../utils";
-import { pickThumbUrl } from "../utils";
+import { BackupTimestamp, pickThumbUrl } from "../utils";
 
-export function parseShowLiveChatActionPanelAction(payload: YTShowLiveChatActionPanelAction) {
+export function parseShowLiveChatActionPanelAction(payload: YTShowLiveChatActionPanelAction, backupTimestamp: BackupTimestamp) {
 	const panelRdr = payload.panelToShow.liveChatActionPanelRenderer;
 	const rendererType = Object.keys(panelRdr.contents)[0];
 	switch (rendererType) {
@@ -12,9 +13,11 @@ export function parseShowLiveChatActionPanelAction(payload: YTShowLiveChatAction
 			const authorName = rdr.header.pollHeaderRenderer.metadataText.runs[0].text;
 
 			const parsed: ShowPollPanelAction = {
-				type: "showPollPanelAction",
+				type: exportActionTypes.showPollPanelAction,
+				// ...rdr,
 				targetId: panelRdr.targetId,
 				id: panelRdr.id,
+				color:ColorName.poll,
 				choices: rdr.choices,
 				question: rdr.header.pollHeaderRenderer.pollQuestion?.simpleText,
 				authorName,
@@ -30,7 +33,7 @@ export function parseShowLiveChatActionPanelAction(payload: YTShowLiveChatAction
 	}
 
 	const parsed: ShowPanelAction = {
-		type: "showPanelAction",
+		type: exportActionTypes.showPanelAction,
 		panelToShow: payload.panelToShow,
 	};
 	return parsed;

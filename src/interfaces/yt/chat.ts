@@ -248,7 +248,10 @@ export interface YTAction {
 	showLiveChatActionPanelAction?: YTShowLiveChatActionPanelAction;
 	updateLiveChatPollAction?: YTUpdateLiveChatPollAction;
 	closeLiveChatActionPanelAction?: YTCloseLiveChatActionPanelAction;
+	liveChatReportModerationStateCommand: YTLiveChatReportModerationStateCommand
 }
+
+export interface YTLiveChatReportModerationStateCommand {}
 
 export interface YTAddChatItemAction {
 	item: YTAddChatItemActionItem;
@@ -391,6 +394,7 @@ export interface YTLiveChatProductItemRendererContainer {
 export interface YTLiveChatTextMessageRenderer {
 	id: string;
 	timestampUsec: string;
+	timestampText?: YTSimpleTextContainer;
 	message: YTRunContainer;
 	authorName: YTText;
 	authorPhoto: YTThumbnailList;
@@ -406,12 +410,15 @@ export interface YTLiveChatTextMessageRenderer {
 export interface YTLiveChatPaidMessageRenderer {
 	id: string;
 	timestampUsec: string;
+	timestampText?: YTSimpleTextContainer;
 	message?: YTRunContainer;
 	authorName: YTText;
 	authorPhoto: YTThumbnailList;
 	authorExternalChannelId: string;
 	contextMenuEndpoint: YTLiveChatItemContextMenuEndpointContainer;
 	contextMenuAccessibility: YTAccessibilityData;
+
+	authorBadges?: YTAuthorBadge[];
 
 	purchaseAmountText: YTSimpleTextContainer;
 	timestampColor: number;
@@ -421,6 +428,116 @@ export interface YTLiveChatPaidMessageRenderer {
 	bodyBackgroundColor: number;
 	bodyTextColor: number;
 	trackingParams: string;
+	creatorHeartButton?: CreatorHeartButton;
+	headerOverlayImage?: YTThumbnailList;
+	lowerBumper?: LowerBumper;
+}
+
+export interface LowerBumper {
+	liveChatItemBumperViewModel: LiveChatItemBumperViewModel;
+}
+
+export interface LiveChatItemBumperViewModel {
+	content: Content;
+}
+
+export interface Content {
+	bumperUserEduContentViewModel: BumperUserEduContentViewModel;
+}
+
+export interface BumperUserEduContentViewModel {
+	text: Text;
+	trackingParams: string;
+	image: BumperUserEduContentViewModelImage;
+}
+
+export interface Text {
+	content: string;
+	styleRuns: StyleRun[];
+}
+
+export interface StyleRun {
+	startIndex: number;
+	length: number;
+}
+
+export interface BumperUserEduContentViewModelImage {
+	sources: ImageSource[];
+}
+
+export interface ImageSource {
+	clientResource: FluffyClientResource;
+}
+
+export interface FluffyClientResource {
+	imageName: string;
+	imageColor: number;
+}
+
+export interface CreatorHeartButton {
+	creatorHeartViewModel: CreatorHeartViewModel;
+}
+
+export interface CreatorHeartViewModel {
+	creatorThumbnail: CreatorThumbnail;
+	heartedIcon: ClientResourceSources;
+	unheartedIcon: UnheartedIcon;
+	heartedHoverText: string;
+	heartedAccessibilityLabel: string;
+	unheartedAccessibilityLabel: string;
+	engagementStateKey: string;
+	gradient?: Gradient;
+	loggingDirectives?: LoggingDirectives;
+}
+
+export interface CreatorThumbnail {
+	sources: Thumbnail[];
+}
+
+export interface UnheartedIcon {
+	sources: ClientResourceSources[];
+	processor: Processor;
+}
+
+export interface Gradient {
+	sources: Thumbnail[];
+	processor: Processor;
+}
+
+export interface LoggingDirectives {
+	trackingParams: string;
+	visibility: Visibility;
+	enableDisplayloggerExperiment: boolean;
+}
+
+export interface Visibility {
+	types: string;
+}
+
+export interface Processor {
+	borderImageProcessor: BorderImageProcessor;
+}
+
+export interface BorderImageProcessor {
+	imageTint: ImageTint;
+}
+
+export interface ImageTint {
+	color: number;
+}
+
+export interface ClientResourceSources {
+	sources: ClientResource[];
+}
+
+export interface ClientResource {
+	imageName: string;
+}
+
+export interface Thumbnail {
+	url: string;
+	width?: number;
+	height?: number;
 }
 
 export interface YTLiveChatPaidStickerRenderer {
@@ -428,8 +545,10 @@ export interface YTLiveChatPaidStickerRenderer {
 	contextMenuEndpoint: YTLiveChatItemContextMenuEndpointContainer;
 	contextMenuAccessibility: YTAccessibilityData;
 	timestampUsec: string;
+	timestampText?: YTSimpleTextContainer;
 	authorPhoto: YTThumbnailList;
 	authorName: YTText;
+	authorBadges?: YTAuthorBadge[];
 	authorExternalChannelId: string;
 	sticker: YTThumbnailList; // with accessibility
 	moneyChipBackgroundColor: number;
@@ -440,6 +559,8 @@ export interface YTLiveChatPaidStickerRenderer {
 	backgroundColor: number;
 	authorNameTextColor: number;
 	trackingParams: string;
+	headerOverlayImage?: YTThumbnailList;
+	lowerBumper?: LowerBumper;
 }
 
 /**
@@ -461,9 +582,9 @@ export interface YTLiveChatMembershipItemRenderer {
 	headerSubtext: YTText;
 	message?: YTRunContainer; // milestone with message
 	empty?: true; // milestone without message
-	authorName?: YTText;
+	authorName: YTText;
 	authorPhoto: YTThumbnailList;
-	authorBadges: YTLiveChatAuthorBadgeRendererContainer[];
+	authorBadges?: YTAuthorBadge[];
 	contextMenuEndpoint: YTLiveChatItemContextMenuEndpointContainer;
 	contextMenuAccessibility: YTAccessibilityData;
 }
@@ -494,7 +615,7 @@ export interface YTLiveChatViewerEngagementMessageRenderer {
 
 export interface YTTooltipRenderer {
 	// TODO: type promoConfig
-	promoConfig: any;
+	promoConfig: unknown;
 	targetId: string;
 	detailsText: YTText;
 	suggestedPosition: YTType;
@@ -522,7 +643,7 @@ export interface YTLiveChatPollRenderer {
 }
 
 export interface YTLiveChatActionPanelRenderer {
-	contents: YTLiveChatPollRendererContainer | any;
+	contents: YTLiveChatPollRendererContainer | unknown;
 	id: string;
 	targetId: string;
 }
@@ -642,6 +763,7 @@ export interface YTLiveChatSponsorshipsGiftPurchaseAnnouncementRenderer {
 	id: string;
 	/** will be undefined if its container is a ticker */
 	timestampUsec?: string;
+	timestampText?: YTSimpleTextContainer;
 	authorExternalChannelId: string;
 	header: {
 		liveChatSponsorshipsHeaderRenderer: YTLiveChatSponsorshipsHeaderRenderer;
@@ -660,7 +782,7 @@ export interface YTLiveChatSponsorshipsHeaderRenderer {
 			{ text: " memberships"; bold: true }
 		];
 	};
-	authorBadges?: YTLiveChatAuthorBadgeRendererContainer[];
+	authorBadges?: YTAuthorBadge[];
 	contextMenuEndpoint: YTLiveChatItemContextMenuEndpointContainer;
 	contextMenuAccessibility: YTAccessibilityData;
 	image: YTThumbnailList; // https://www.gstatic.com/youtube/img/sponsorships/sponsorships_gift_purchase_announcement_artwork.png
@@ -670,9 +792,11 @@ export interface YTLiveChatSponsorshipsHeaderRenderer {
 export interface YTLiveChatSponsorshipsGiftRedemptionAnnouncementRenderer {
 	id: string;
 	timestampUsec: string;
+	timestampText?: YTSimpleTextContainer;
 	authorExternalChannelId: string;
 	authorName: YTSimpleTextContainer;
 	authorPhoto: YTThumbnailList;
+	authorBadges?: YTAuthorBadge[];
 	message: {
 		runs: [
 			{ text: "was gifted a membership by "; italics: true },
@@ -828,7 +952,7 @@ export interface YTWatchEndpointContainer {
 }
 
 export interface YTSignInEndpoint {
-	nextEndpoint: YTWatchEndpointContainer | {};
+	nextEndpoint: YTWatchEndpointContainer | object;
 }
 
 export interface YTWatchEndpoint {
@@ -960,7 +1084,7 @@ export interface YTButtonRenderer {
 }
 
 // Generic type
-export interface YTButton {}
+// export interface YTButton {}
 
 export interface YTLiveChatBannerRendererHeader {
 	liveChatBannerHeaderRenderer: {
@@ -1121,7 +1245,7 @@ export interface YTParticipant {
 	liveChatParticipantRenderer: {
 		authorName: YTText;
 		authorPhoto: YTThumbnailList;
-		authorBadges: YTLiveChatAuthorBadgeRendererContainer[];
+		authorBadges: YTAuthorBadge[];
 	};
 }
 

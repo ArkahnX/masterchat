@@ -1,11 +1,11 @@
-import { RemoveChatItemAction } from "../../interfaces/actions";
+import { exportActionTypes, RemoveChatItemAction } from "../../interfaces/actions";
 import { YTRemoveChatItemAction } from "../../interfaces/yt/chat";
 
 export function parseRemoveChatItemAction(payload: YTRemoveChatItemAction) {
 	const parsed: RemoveChatItemAction = {
-		type: "removeChatItemAction",
+		type: exportActionTypes.removeChatItemAction,
 		targetId: payload.targetItemId,
-		timestamp: new Date(),
+		timestamp: Date.now(),
 	};
 	return parsed;
 }

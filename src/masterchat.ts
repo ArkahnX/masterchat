@@ -4,7 +4,7 @@ import { buildMeta } from "./api";
 import { buildAuthHeaders } from "./auth";
 import { parseAction } from "./chat";
 import { parseMarkChatItemAsDeletedAction } from "./chat/actions/markChatItemAsDeletedAction";
-import { pickThumbUrl } from "./chat/utils";
+import { BackupTimestamp, pickThumbUrl } from "./chat/utils";
 import * as Constants from "./constants";
 import { parseMetadataFromEmbed, parseMetadataFromWatch } from "./context";
 import {
@@ -19,7 +19,7 @@ import {
 	UnavailableError,
 } from "./errors";
 import { ChatResponse, Credentials, RenderingPriority, YTCommentThreadRenderer, YTContinuationItem } from "./interfaces";
-import { Action, AddChatItemAction, MarkChatItemAsDeletedAction } from "./interfaces/actions";
+import { Action, ItemActionTypes, AddChatItemAction, MarkChatItemAsDeletedAction } from "./interfaces/actions";
 import { ActionCatalog, ActionInfo } from "./interfaces/contextActions";
 import { TranscriptSegment } from "./interfaces/transcript";
 import {
@@ -393,8 +393,13 @@ export class Masterchat extends EventEmitter {
 			if ((err as AxiosError).code === "ERR_BAD_REQUEST" && (err as AxiosError).response.status === 429) {
 				throw new AccessDeniedError("Rate limit exceeded: " + id);
 			}
-			console.error(`Throwing unknown error, code: ${err.code}, ${err.response.status}`);
-			throw err;
+			if (err instanceof MasterchatError) {
+				throw err;
+			}
+			if (err instanceof MasterchatError === false) {
+				console.error("Throwing unknown error");
+				throw err;
+			}
 		}
 	}
 
@@ -452,7 +457,7 @@ export class Masterchat extends EventEmitter {
 
 				// only normal chats
 				if (this.listenerCount("chats") > 0 || this.listenerCount("chat") > 0) {
-					const chats = actions.filter((action): action is AddChatItemAction => action.type === "addChatItemAction");
+					const chats = actions.filter((action): action is AddChatItemAction => action.type === ItemActionTypes.addChatItemAction);
 					this.emit("chats", chats, this);
 					chats.forEach((chat) => this.emit("chat", chat, this));
 				}
@@ -703,10 +708,14 @@ export class Masterchat extends EventEmitter {
 			}
 
 			const { continuationContents } = payload;
-
-			const emojiFountainData = payload.frameworkUpdates?.entityBatchUpdate.mutations
-				.map((mutation) => mutation.payload.emojiFountainDataEntity)
-				.find(Boolean);
+			let emojiFountainData;
+			try {
+				emojiFountainData = payload.frameworkUpdates?.entityBatchUpdate.mutations
+					.map((mutation) => mutation.payload?.emojiFountainDataEntity)
+					.find(Boolean);
+			} catch (e) {
+				console.error("Catching missing emojiFountainData", JSON.stringify(payload?.frameworkUpdates?.entityBatchUpdate ?? {}), e);
+			}
 
 			if (!continuationContents) {
 				/** there's several possibilities lied here:
@@ -771,10 +780,13 @@ export class Masterchat extends EventEmitter {
 				rawActions = unwrapReplayActions(rawActions);
 			}
 
+			const backupTimestamp = new BackupTimestamp();
+			
+
 			const actions = rawActions
 				.map((action) => {
 					try {
-						return parseAction(action);
+						return parseAction(action, backupTimestamp);
 					} catch (error: any) {
 						this.log("parseAction", error?.message, error?.stack, { action });
 						return null;

@@ -2,8 +2,19 @@ import debug from "debug";
 import { DC, DO } from "./constants";
 import { AbortError } from "./errors";
 import { Color, TimedContinuation } from "./interfaces/misc";
-import { YTAction, YTContinuationContents, YTEmojiRun, YTRun, YTSimpleTextContainer, YTText, YTTextRun } from "./interfaces/yt/chat";
+import {
+	YTAction,
+	YTContinuationContents,
+	YTEmoji,
+	YTEmojiRun,
+	YTRun,
+	YTSimpleTextContainer,
+	YTText,
+	YTTextRun,
+} from "./interfaces/yt/chat";
 import { FluffyBrowseEndpoint } from "./interfaces/yt/context";
+import { Emote } from "./interfaces/Superchats/common";
+import { pickThumbUrl } from "./chat/utils";
 
 export type ColorFormat = "rgb" | "hex";
 
@@ -34,6 +45,21 @@ export function tsToDate(timestampUsec: string): Date {
  */
 export function tsToNumber(timestampUsec: string): number {
 	return Number(BigInt(timestampUsec) / BigInt(1000));
+}
+
+export function tsTextToSeconds(timestampText?: YTSimpleTextContainer) {
+	const multipliers = [1, 60, 3600];
+	if(!timestampText) {
+		return undefined;
+	}
+	const split = timestampText.simpleText.split(":").reverse();
+	const negative = timestampText.simpleText.charAt(0) === "-" ? -1 : 1;
+	let final = 0;
+	for (const [depth, entry] of split.entries()) {
+		const parsed = Math.abs(parseInt(entry));
+		final += parsed * multipliers[depth];
+	}
+	return negative * final;
 }
 
 export function usecToSeconds(usec: string): number {
@@ -145,8 +171,34 @@ export function emojiRunToPlainText(run: YTEmojiRun): string {
 	if ("shortcuts" in emoji) {
 		return emoji.shortcuts[0];
 	} else {
-		return emoji.emojiId;
+		return `:${(emoji as YTEmoji).emojiId}:`;
 	}
+}
+
+export function getEmojis(runs?: YTRun[]) {
+	const storedIds = new Set<string>();
+	const emotes: Emote[] = [];
+	if (runs) {
+		for (const run of runs) {
+			if ("emoji" in run) {
+				if (storedIds.has(run.emoji.emojiId) === false) {
+					storedIds.add(run.emoji.emojiId);
+					let id = `:${run.emoji.emojiId}:`;
+					if ("shortcuts" in run.emoji) {
+						id = run.emoji.shortcuts[0];
+					}
+					emotes.push({
+						id,
+						image: pickThumbUrl(run.emoji.image),
+					});
+				}
+			}
+		}
+	}
+	if (emotes.length) {
+		return emotes;
+	}
+	return undefined;
 }
 
 /**

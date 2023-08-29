@@ -1,7 +1,17 @@
 import { debugLog } from "../utils";
-import { YTAuthorBadge, YTLiveChatTextMessageRenderer } from "../interfaces/yt/chat";
+import {
+	YTAuthorBadge,
+	YTLiveChatMembershipItemRenderer,
+	YTLiveChatPaidMessageRenderer,
+	YTLiveChatPaidStickerRenderer,
+	YTLiveChatSponsorshipsGiftRedemptionAnnouncementRenderer,
+	YTLiveChatSponsorshipsHeaderRenderer,
+	YTLiveChatTextMessageRenderer,
+} from "../interfaces/yt/chat";
 import { Membership } from "../interfaces/misc";
-import hololiveChannels from "../../../../data/hololive-channels.json";
+import hololiveChannels from "../hololive-channels.json";
+import { AuthorBadges } from "../interfaces/Superchats/common";
+import { pickThumbUrl } from "./utils";
 
 export function parseMembership(badge?: YTAuthorBadge): Membership | undefined {
 	if (!badge) return;
@@ -10,54 +20,53 @@ export function parseMembership(badge?: YTAuthorBadge): Membership | undefined {
 
 	const match = /^(.+?)(?:\s\((.+)\))?$/.exec(renderer.tooltip);
 	if (match) {
+		// eslint-disable-next-line @typescript-eslint/no-unused-vars
 		const [_, status, since] = match;
 		const membership = {
 			status,
 			since,
-			thumbnail: renderer.customThumbnail.thumbnails[renderer.customThumbnail.thumbnails.length - 1].url,
+			thumbnail: pickThumbUrl(renderer.customThumbnail),
 		};
 		return membership;
 	}
 }
 
-export function parseBadges(renderer: YTLiveChatTextMessageRenderer) {
-	let isVerified = false,
-		isOwner = false,
-		isModerator = false,
-		membership: Membership | undefined = undefined;
-	if (renderer.authorExternalChannelId in hololiveChannels) {
-		isModerator = true;
+export function parseBadges(
+	renderer:
+		| YTLiveChatTextMessageRenderer
+		| YTLiveChatPaidMessageRenderer
+		| YTLiveChatPaidStickerRenderer
+		| YTLiveChatMembershipItemRenderer
+		| YTLiveChatSponsorshipsHeaderRenderer
+		| YTLiveChatSponsorshipsGiftRedemptionAnnouncementRenderer
+) {
+	const badges: AuthorBadges = {};
+	if ("authorExternalChannelId" in renderer && renderer.authorExternalChannelId in hololiveChannels) {
+		badges.hololive = true;
 	}
 
 	if ("authorBadges" in renderer && renderer.authorBadges) {
 		for (const badge of renderer.authorBadges) {
-			const renderer = badge.liveChatAuthorBadgeRenderer;
-			const iconType = renderer.icon?.iconType;
-			switch (iconType) {
-				case "VERIFIED":
-					isVerified = true;
-					break;
-				case "OWNER":
-					isOwner = true;
-					break;
-				case "MODERATOR":
-					isModerator = true;
-					break;
-				case undefined:
-					// membership
-					membership = parseMembership(badge);
-					break;
-				default:
-					debugLog(`[action required] Unrecognized iconType:`, iconType, JSON.stringify(renderer));
-					throw new Error("Unrecognized iconType: " + iconType);
+			const badgeRenderer = badge.liveChatAuthorBadgeRenderer;
+			const iconType = badgeRenderer.icon?.iconType;
+			if (iconType === "VERIFIED") {
+				badges.verified = true;
+			} else if (iconType === "OWNER") {
+				badges.owner = true;
+			} else if (iconType === "MODERATOR") {
+				badges.moderator = true;
+			} else if (badgeRenderer.customThumbnail) {
+				const membership = parseMembership(badge);
+				badges.duration = membership?.since ?? membership?.status;
+				badges.thumbnail = membership?.thumbnail;
+			} else {
+				debugLog("[action required] Unrecognized iconType:", iconType, JSON.stringify(badgeRenderer));
+				throw new Error(`Unrecognized iconType: ${iconType ?? ""}`);
 			}
 		}
 	}
-
-	return {
-		isOwner,
-		isVerified,
-		isModerator,
-		membership,
-	};
+	if(Object.keys(badges).length === 0) {
+		return undefined;
+	}
+	return badges;
 }

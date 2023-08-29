@@ -1,5 +1,4 @@
 import { unknown } from "..";
-import { AddMembershipTickerAction, AddSuperChatTickerAction, AddSuperStickerTickerAction } from "../../interfaces/actions";
 import {
 	YTAddLiveChatTickerItem,
 	YTAddLiveChatTickerItemAction,
@@ -7,114 +6,83 @@ import {
 	YTLiveChatTickerPaidStickerItemRenderer,
 	YTLiveChatTickerSponsorItemRenderer,
 } from "../../interfaces/yt/chat";
-import { debugLog, stringify } from "../../utils";
-import { parseColorCode, pickThumbUrl } from "../utils";
+import { debugLog } from "../../utils";
+import { BackupTimestamp, findUnexpectedProperties } from "../utils";
 import {
 	parseLiveChatMembershipItemRenderer,
 	parseLiveChatPaidMessageRenderer,
 	parseLiveChatPaidStickerRenderer,
 	parseLiveChatSponsorshipsGiftPurchaseAnnouncementRenderer,
 } from "./addChatItemAction";
+import { membershipTickerProperties, superChatTickerProperties, superStickerTickerProperties } from "./properties";
 
-export function parseAddLiveChatTickerItemAction(payload: YTAddLiveChatTickerItemAction) {
-	const { item, durationSec } = payload;
+export function parseAddLiveChatTickerItemAction(payload: YTAddLiveChatTickerItemAction, backupTimestamp: BackupTimestamp) {
+	const rendererType = Object.keys(payload.item)[0] as keyof YTAddLiveChatTickerItem;
 
-	const rendererType = Object.keys(item)[0] as keyof YTAddLiveChatTickerItem;
-
-	switch (rendererType) {
-		// SuperChat Ticker
-		case "liveChatTickerPaidMessageItemRenderer": {
-			const renderer = item[rendererType]!;
-			return parseLiveChatTickerPaidMessageItemRenderer(renderer, durationSec);
+	if ("liveChatTickerPaidMessageItemRenderer" in payload.item && payload.item.liveChatTickerPaidMessageItemRenderer) {
+		// superchats
+		const renderer = payload.item.liveChatTickerPaidMessageItemRenderer;
+		const unexpectedProperties = findUnexpectedProperties(superChatTickerProperties, renderer);
+		const unexpectedKeys = [...Object.keys(unexpectedProperties)];
+		if (unexpectedKeys.length > 0) {
+			console.log("Unexpected keys found in [liveChatTickerPaidMessageItemRenderer]", unexpectedKeys);
 		}
-
-		case "liveChatTickerPaidStickerItemRenderer": {
-			// Super Sticker
-			const renderer = item[rendererType]!;
-			const parsed: AddSuperStickerTickerAction = parseLiveChatTickerPaidStickerItemRenderer(renderer, durationSec);
-			return parsed;
+		const parsed = parseLiveChatTickerPaidMessageItemRenderer(renderer, backupTimestamp);
+		const combined = Object.assign(unexpectedProperties, parsed);
+		return combined;
+	} else if ("liveChatTickerPaidStickerItemRenderer" in payload.item && payload.item.liveChatTickerPaidStickerItemRenderer) {
+		// stickers
+		const renderer = payload.item.liveChatTickerPaidStickerItemRenderer;
+		const unexpectedProperties = findUnexpectedProperties(superStickerTickerProperties, renderer);
+		const unexpectedKeys = [...Object.keys(unexpectedProperties)];
+		if (unexpectedKeys.length > 0) {
+			console.log("Unexpected keys found in [liveChatTickerPaidStickerItemRenderer]", unexpectedKeys);
 		}
-
-		case "liveChatTickerSponsorItemRenderer": {
-			// Membership
-			const renderer = item[rendererType]!;
-			const parsed: AddMembershipTickerAction = parseLiveChatTickerSponsorItemRenderer(renderer, durationSec);
-			return parsed;
+		const parsed = parseLiveChatTickerPaidStickerItemRenderer(renderer, backupTimestamp);
+		const combined = Object.assign(unexpectedProperties, parsed);
+		return combined;
+	} else if ("liveChatTickerSponsorItemRenderer" in payload.item && payload.item.liveChatTickerSponsorItemRenderer) {
+		// new members / gifts
+		const renderer = payload.item.liveChatTickerSponsorItemRenderer;
+		const unexpectedProperties = findUnexpectedProperties(membershipTickerProperties, renderer);
+		const unexpectedKeys = [...Object.keys(unexpectedProperties)];
+		if (unexpectedKeys.length > 0) {
+			console.log("Unexpected keys found in [liveChatTickerSponsorItemRenderer]", unexpectedKeys);
 		}
-
-		default:
-			debugLog("[action required] Unrecognized renderer type (addLiveChatTickerItemAction):", rendererType, JSON.stringify(item));
-
-			const _: never = rendererType;
+		const parsed = parseLiveChatTickerSponsorItemRenderer(renderer, backupTimestamp);
+		const combined = Object.assign(unexpectedProperties, parsed);
+		return combined;
+	} else {
+		debugLog("[action required] Unrecognized renderer type (addLiveChatTickerItemAction):", rendererType, JSON.stringify(payload.item));
 	}
-
 	return unknown(payload);
 }
 
-function parseLiveChatTickerPaidMessageItemRenderer(renderer: YTLiveChatTickerPaidMessageItemRenderer, durationSec: string) {
-	const contents = parseLiveChatPaidMessageRenderer(
-		renderer.showItemEndpoint.showLiveChatItemEndpoint.renderer.liveChatPaidMessageRenderer
+function parseLiveChatTickerPaidMessageItemRenderer(
+	renderer: YTLiveChatTickerPaidMessageItemRenderer,
+	backupTimestamp: BackupTimestamp /* , durationSec: string */
+) {
+	return parseLiveChatPaidMessageRenderer(
+		renderer.showItemEndpoint.showLiveChatItemEndpoint.renderer.liveChatPaidMessageRenderer,
+		backupTimestamp
 	);
-	const authorPhoto = pickThumbUrl(renderer.authorPhoto);
-
-	const parsed: AddSuperChatTickerAction = {
-		type: "addSuperChatTickerAction",
-		id: renderer.id,
-		authorChannelId: renderer.authorExternalChannelId,
-		authorPhoto,
-		amountText: stringify(renderer.amount),
-		durationSec: Number(durationSec),
-		fullDurationSec: renderer.fullDurationSec,
-		contents,
-		amountTextColor: parseColorCode(renderer.amountTextColor),
-		startBackgroundColor: parseColorCode(renderer.startBackgroundColor)!,
-		endBackgroundColor: parseColorCode(renderer.endBackgroundColor),
-	};
-
-	return parsed;
 }
 
 function parseLiveChatTickerPaidStickerItemRenderer(
 	renderer: YTLiveChatTickerPaidStickerItemRenderer,
-	durationSec: string
-): AddSuperStickerTickerAction {
-	const contents = parseLiveChatPaidStickerRenderer(
-		renderer.showItemEndpoint.showLiveChatItemEndpoint.renderer.liveChatPaidStickerRenderer
+	backupTimestamp: BackupTimestamp /* ,
+	durationSec: string */
+) {
+	return parseLiveChatPaidStickerRenderer(
+		renderer.showItemEndpoint.showLiveChatItemEndpoint.renderer.liveChatPaidStickerRenderer,
+		backupTimestamp
 	);
-	const authorName = renderer.authorPhoto.accessibility?.accessibilityData.label;
-	const authorChannelId = renderer.authorExternalChannelId;
-	const authorPhoto = pickThumbUrl(renderer.authorPhoto);
-
-	if (!authorName) {
-		debugLog("[action required] empty authorName (parseLiveChatTickerPaidStickerItemRenderer):", JSON.stringify(renderer.authorPhoto));
-	}
-
-	// NOTE: tickerThumbnails can be more than single entry
-	const tickerPackThumbnail = pickThumbUrl(renderer.tickerThumbnails[0]);
-	const tickerPackName = renderer.tickerThumbnails[0].accessibility!.accessibilityData.label;
-
-	return {
-		type: "addSuperStickerTickerAction",
-		id: renderer.id,
-		authorName: authorName!,
-		authorChannelId,
-		authorPhoto,
-		durationSec: Number(durationSec),
-		fullDurationSec: renderer.fullDurationSec,
-		tickerPackThumbnail,
-		tickerPackName,
-		contents,
-		startBackgroundColor: parseColorCode(renderer.startBackgroundColor)!,
-		endBackgroundColor: parseColorCode(renderer.endBackgroundColor),
-	};
 }
 
 function parseLiveChatTickerSponsorItemRenderer(
 	renderer: YTLiveChatTickerSponsorItemRenderer,
-	durationSec: string
-): AddMembershipTickerAction {
-	const authorChannelId = renderer.authorExternalChannelId;
-	const authorPhoto = pickThumbUrl(renderer.sponsorPhoto);
+	backupTimestamp: BackupTimestamp
+) {
 
 	/**
 	 * - membership / membership milestone
@@ -128,30 +96,17 @@ function parseLiveChatTickerSponsorItemRenderer(
 	 * showItemEndpoint.showLiveChatItemEndpoint.renderer -> liveChatSponsorshipsGiftPurchaseAnnouncementRenderer
 	 * also liveChatSponsorshipsGiftPurchaseAnnouncementRenderer missing timestampUsec
 	 */
-	// const iconType = renderer.detailIcon?.iconType;
 	const rdr = renderer.showItemEndpoint.showLiveChatItemEndpoint.renderer;
-	let contents;
 	if ("liveChatMembershipItemRenderer" in rdr) {
-		contents = parseLiveChatMembershipItemRenderer(rdr.liveChatMembershipItemRenderer);
+		return parseLiveChatMembershipItemRenderer(rdr.liveChatMembershipItemRenderer, backupTimestamp);
 	} else if ("liveChatSponsorshipsGiftPurchaseAnnouncementRenderer" in rdr) {
-		contents = parseLiveChatSponsorshipsGiftPurchaseAnnouncementRenderer(rdr.liveChatSponsorshipsGiftPurchaseAnnouncementRenderer);
+		return parseLiveChatSponsorshipsGiftPurchaseAnnouncementRenderer(
+			rdr.liveChatSponsorshipsGiftPurchaseAnnouncementRenderer,
+			backupTimestamp
+		);
 	} else {
 		const key = Object.keys(rdr)[0];
 		debugLog(`[action required] Unrecognized renderer '${key}' (parseLiveChatTickerSponsorItemRenderer):`, JSON.stringify(renderer));
 		throw new Error(`Unrecognized renderer (parseLiveChatTickerSponsorItemRenderer): ${key}`);
 	}
-
-	return {
-		type: "addMembershipTickerAction",
-		id: renderer.id,
-		authorChannelId,
-		authorPhoto,
-		durationSec: Number(durationSec),
-		fullDurationSec: renderer.fullDurationSec,
-		detailText: renderer.detailText,
-		contents,
-		detailTextColor: parseColorCode(renderer.detailTextColor)!,
-		startBackgroundColor: parseColorCode(renderer.startBackgroundColor)!,
-		endBackgroundColor: parseColorCode(renderer.endBackgroundColor),
-	};
 }

@@ -1,20 +1,18 @@
 import { unknown } from "..";
+import { ItemActionTypes, AddPollResultAction, ColorName, exportActionTypes } from "../../interfaces";
 import {
 	AddChatItemAction,
 	AddMembershipItemAction,
 	AddMembershipMilestoneItemAction,
-	AddPlaceholderItemAction,
 	AddSuperChatItemAction,
 	AddSuperStickerItemAction,
-	AddViewerEngagementMessageAction,
-	LiveChatMode,
-	ModeChangeAction,
-	AddPollResultAction,
 	MembershipGiftPurchaseAction,
 	MembershipGiftRedemptionAction,
-	MembershipGiftPurchaseTickerContent,
-	ModerationMessageAction,
-} from "../../interfaces/actions";
+	UnknownAction,
+} from "../../interfaces/Superchats/actions";
+import { AddPlaceholderItemAction } from "../../interfaces/Superchats/addPlaceholderItemAction";
+import { AddViewerEngagementMessageAction } from "../../interfaces/Superchats/addViewerEngagementMessageAction";
+import { MembershipGiftPurchaseTickerAction } from "../../interfaces/Superchats/membershipGiftPurchaseTickerAction";
 import {
 	YTAddChatItemAction,
 	YTLiveChatMembershipItemRenderer,
@@ -27,58 +25,68 @@ import {
 	YTLiveChatSponsorshipsGiftRedemptionAnnouncementRenderer,
 	YTLiveChatTextMessageRenderer,
 	YTLiveChatViewerEngagementMessageRenderer,
-	YTRun,
 	YTRunContainer,
 	YTTextRun,
 } from "../../interfaces/yt/chat";
-import { debugLog, durationToSeconds, splitRunsByNewLines, stringify, tsToDate } from "../../utils";
+import { debugLog, durationToSeconds, getEmojis, splitRunsByNewLines, stringify, tsTextToSeconds, tsToNumber } from "../../utils";
 import { parseBadges, parseMembership } from "../badge";
-import { parseAmountText, parseSuperChat } from "../superchat";
-import { parseColorCode, pickThumbUrl } from "../utils";
+import { getColor, parseSuperChat } from "../superchat";
+import { BackupTimestamp, findUnexpectedProperties, parseColorCode, pickThumbUrl } from "../utils";
+import {
+	chatItemProperties,
+	membershipGiftPurchaseHeaderProperties,
+	membershipGiftPurchaseProperties,
+	membershipGiftPurchaseTickerHeaderProperties,
+	membershipGiftPurchaseTickerProperties,
+	membershipItemProperties,
+	membershipMilestoneItemProperties,
+	superChatItemProperties,
+	superStickerItemProperties,
+} from "./properties";
 
-export function parseAddChatItemAction(payload: YTAddChatItemAction) {
+export function parseAddChatItemAction(payload: YTAddChatItemAction, backupTimestamp: BackupTimestamp) {
 	const { item } = payload;
 
 	const parsedAction = (() => {
 		if ("liveChatTextMessageRenderer" in item) {
 			// Chat
-			const renderer = item["liveChatTextMessageRenderer"]!;
-			return parseLiveChatTextMessageRenderer(renderer);
+			const renderer = item["liveChatTextMessageRenderer"];
+			return parseLiveChatTextMessageRenderer(renderer, backupTimestamp);
 		} else if ("liveChatPaidMessageRenderer" in item) {
 			// Super Chat
-			const renderer = item["liveChatPaidMessageRenderer"]!;
-			return parseLiveChatPaidMessageRenderer(renderer);
+			const renderer = item["liveChatPaidMessageRenderer"];
+			return parseLiveChatPaidMessageRenderer(renderer, backupTimestamp);
 		} else if ("liveChatPaidStickerRenderer" in item) {
 			// Super Sticker
-			const renderer = item["liveChatPaidStickerRenderer"]!;
-			return parseLiveChatPaidStickerRenderer(renderer);
+			const renderer = item["liveChatPaidStickerRenderer"];
+			return parseLiveChatPaidStickerRenderer(renderer, backupTimestamp);
 		} else if ("liveChatMembershipItemRenderer" in item) {
 			// Membership updates
-			const renderer = item["liveChatMembershipItemRenderer"]!;
-			return parseLiveChatMembershipItemRenderer(renderer);
+			const renderer = item["liveChatMembershipItemRenderer"];
+			return parseLiveChatMembershipItemRenderer(renderer, backupTimestamp);
 		} else if ("liveChatViewerEngagementMessageRenderer" in item) {
 			// Engagement message
-			const renderer = item["liveChatViewerEngagementMessageRenderer"]!;
-			return parseLiveChatViewerEngagementMessageRenderer(renderer);
+			const renderer = item["liveChatViewerEngagementMessageRenderer"];
+			return parseLiveChatViewerEngagementMessageRenderer(renderer, backupTimestamp);
 		} else if ("liveChatPlaceholderItemRenderer" in item) {
 			// Placeholder chat
-			const renderer = item["liveChatPlaceholderItemRenderer"]!;
-			return parseLiveChatPlaceholderItemRenderer(renderer);
+			const renderer = item["liveChatPlaceholderItemRenderer"];
+			return parseLiveChatPlaceholderItemRenderer(renderer, backupTimestamp);
 		} else if ("liveChatModeChangeMessageRenderer" in item) {
 			// Mode change message (e.g. toggle members-only)
-			const renderer = item["liveChatModeChangeMessageRenderer"]!;
+			const renderer = item["liveChatModeChangeMessageRenderer"];
 			return parseLiveChatModeChangeMessageRenderer(renderer);
 		} else if ("liveChatSponsorshipsGiftPurchaseAnnouncementRenderer" in item) {
 			// Sponsorships gift purchase announcement
 			const renderer = item["liveChatSponsorshipsGiftPurchaseAnnouncementRenderer"];
-			return parseLiveChatSponsorshipsGiftPurchaseAnnouncementRenderer(renderer) as MembershipGiftPurchaseAction;
+			return parseLiveChatSponsorshipsGiftPurchaseAnnouncementRenderer(renderer, backupTimestamp) as MembershipGiftPurchaseAction;
 		} else if ("liveChatSponsorshipsGiftRedemptionAnnouncementRenderer" in item) {
 			// Sponsorships gift purchase announcement
 			const renderer = item["liveChatSponsorshipsGiftRedemptionAnnouncementRenderer"];
-			return parseLiveChatSponsorshipsGiftRedemptionAnnouncementRenderer(renderer);
+			return parseLiveChatSponsorshipsGiftRedemptionAnnouncementRenderer(renderer, backupTimestamp);
 		} else if ("liveChatModerationMessageRenderer" in item) {
 			const renderer = item["liveChatModerationMessageRenderer"];
-			return parseLiveChatModerationMessageRenderer(renderer);
+			return parseLiveChatModerationMessageRenderer(renderer, backupTimestamp);
 		}
 	})();
 
@@ -91,161 +99,237 @@ export function parseAddChatItemAction(payload: YTAddChatItemAction) {
 }
 
 // Chat
-export function parseLiveChatTextMessageRenderer(renderer: YTLiveChatTextMessageRenderer) {
+export function parseLiveChatTextMessageRenderer(renderer: YTLiveChatTextMessageRenderer, backupTimestamp: BackupTimestamp) {
 	const { id, timestampUsec, authorExternalChannelId: authorChannelId } = renderer;
+	backupTimestamp.set(timestampUsec);
+	const timestamp = tsToNumber(timestampUsec);
+	const timestampText = tsTextToSeconds(renderer.timestampText);
 
-	const timestamp = tsToDate(timestampUsec);
+	const authorName = stringify(renderer.authorName);
+	const authorPhoto = pickThumbUrl(renderer.authorPhoto);
 
-	const authorName = renderer.authorName ? stringify(renderer.authorName) : undefined;
-	const authorPhoto = renderer.authorPhoto.thumbnails[renderer.authorPhoto.thumbnails.length - 1].url;
+	const authorBadges = parseBadges(renderer);
+	const emotes = getEmojis(renderer.message.runs);
 
-	const { isVerified, isOwner, isModerator, membership } = parseBadges(renderer);
-
-	const contextMenuEndpointParams = renderer.contextMenuEndpoint!.liveChatItemContextMenuEndpoint.params;
+	const unexpectedProperties = findUnexpectedProperties(chatItemProperties, renderer);
+	const unexpectedKeys = [...Object.keys(unexpectedProperties)];
+	if (unexpectedKeys.length > 0) {
+		console.log("Unexpected keys found in [parseLiveChatTextMessageRenderer]", unexpectedKeys);
+	}
+	// const contextMenuEndpointParams = renderer.contextMenuEndpoint!.liveChatItemContextMenuEndpoint.params;
 
 	if (renderer.authorName && !("simpleText" in renderer.authorName)) {
 		debugLog("[action required] non-simple authorName (live chat):", JSON.stringify(renderer.authorName));
 	}
 
 	// message can somehow be a blank object (in quite rare occasion though)
-	const message = renderer.message.runs as YTRun[] | undefined;
+	const message = stringify(renderer.message) ?? null;
 
 	const parsed: AddChatItemAction = {
-		type: "addChatItemAction",
+		type: exportActionTypes.addChatItemAction,
+		// ...renderer,
 		id,
 		timestamp,
-		timestampUsec,
+		timestampText,
+		// timestampUsec,
 		authorName,
-		authorChannelId,
 		authorPhoto,
+		authorChannelId,
+		authorBadges,
+		color: ColorName.chat,
 		message,
-		membership,
-		isVerified,
-		isOwner,
-		isModerator,
-		contextMenuEndpointParams,
-		rawMessage: message, // deprecated
+		emotes,
+		...unexpectedProperties,
+		// membership,
+		// isVerified,
+		// isOwner,
+		// isModerator,
+		// contextMenuEndpointParams,
+		// rawMessage: message, // deprecated
 	};
 
 	return parsed;
 }
 
 // Super Chat
-export function parseLiveChatPaidMessageRenderer(renderer: YTLiveChatPaidMessageRenderer) {
+export function parseLiveChatPaidMessageRenderer(renderer: YTLiveChatPaidMessageRenderer, backupTimestamp: BackupTimestamp) {
 	const { timestampUsec, authorExternalChannelId: authorChannelId } = renderer;
-
-	const timestamp = tsToDate(timestampUsec);
+	backupTimestamp.set(timestampUsec);
+	const timestamp = tsToNumber(timestampUsec);
+	const timestampText = tsTextToSeconds(renderer.timestampText);
 
 	const authorName = stringify(renderer.authorName);
 	const authorPhoto = pickThumbUrl(renderer.authorPhoto);
+	const authorBadges = parseBadges(renderer);
+	const color = getColor(renderer);
 
 	if (renderer.authorName && !("simpleText" in renderer.authorName)) {
 		debugLog("[action required] non-simple authorName (super chat):", JSON.stringify(renderer.authorName));
 	}
 
-	const message = renderer.message?.runs ?? null;
+	const unexpectedProperties = findUnexpectedProperties(superChatItemProperties, renderer);
+	const unexpectedKeys = [...Object.keys(unexpectedProperties)];
+	if (unexpectedKeys.length > 0) {
+		console.log("Unexpected keys found in [parseLiveChatPaidMessageRenderer]", unexpectedKeys);
+	}
+
+	const message = (renderer.message && stringify(renderer.message)) || null;
+	const emotes = getEmojis(renderer.message?.runs);
 	const superchat = parseSuperChat(renderer);
 
 	const parsed: AddSuperChatItemAction = {
-		type: "addSuperChatItemAction",
+		type: exportActionTypes.addSuperChatItemAction,
+		// ...renderer
 		id: renderer.id,
 		timestamp,
-		timestampUsec,
+		timestampText,
+		// timestampUsec,
 		authorName,
-		authorChannelId,
 		authorPhoto,
+		authorChannelId,
+		authorBadges,
+		color,
 		message,
+		emotes,
+		backgroundColor: parseColorCode(renderer.bodyBackgroundColor),
 		...superchat,
-		superchat, // deprecated
-		rawMessage: renderer.message?.runs, // deprecated
+		...unexpectedProperties,
+		// superchat, // deprecated
+		// rawMessage: renderer.message?.runs, // deprecated
 	};
 	return parsed;
 }
 
 // Super Sticker
-export function parseLiveChatPaidStickerRenderer(rdr: YTLiveChatPaidStickerRenderer): AddSuperStickerItemAction {
-	const { timestampUsec, authorExternalChannelId: authorChannelId } = rdr;
+export function parseLiveChatPaidStickerRenderer(
+	renderer: YTLiveChatPaidStickerRenderer,
+	backupTimestamp: BackupTimestamp
+): AddSuperStickerItemAction {
+	const { timestampUsec, authorExternalChannelId: authorChannelId } = renderer;
+	backupTimestamp.set(timestampUsec);
+	const timestamp = tsToNumber(timestampUsec);
+	const timestampText = tsTextToSeconds(renderer.timestampText);
 
-	const timestamp = tsToDate(timestampUsec);
-
-	const authorName = stringify(rdr.authorName);
-	const authorPhoto = pickThumbUrl(rdr.authorPhoto);
+	const authorName = stringify(renderer.authorName);
+	const authorPhoto = pickThumbUrl(renderer.authorPhoto);
+	const authorBadges = parseBadges(renderer);
 
 	if (!authorName) {
-		debugLog("[action required] empty authorName (super sticker)", JSON.stringify(rdr));
+		debugLog("[action required] empty authorName (super sticker)", JSON.stringify(renderer));
 	}
 
-	const stickerUrl = "https:" + pickThumbUrl(rdr.sticker);
-	const stickerText = rdr.sticker.accessibility!.accessibilityData.label;
-	const { amount, currency } = parseAmountText(rdr.purchaseAmountText.simpleText);
+	const sticker = "https:" + pickThumbUrl(renderer.sticker);
+	let stickerLabel;
+	if ("accessibility" in renderer.sticker && renderer.sticker.accessibility) {
+		stickerLabel = renderer.sticker.accessibility.accessibilityData.label;
+	}
+
+	const superchat = parseSuperChat(renderer);
+	const color = getColor(renderer);
+
+	const unexpectedProperties = findUnexpectedProperties(superStickerItemProperties, renderer);
+	const unexpectedKeys = [...Object.keys(unexpectedProperties)];
+	if (unexpectedKeys.length > 0) {
+		console.log("Unexpected keys found in [parseLiveChatPaidStickerRenderer]", unexpectedKeys);
+	}
 
 	const parsed: AddSuperStickerItemAction = {
-		type: "addSuperStickerItemAction",
-		id: rdr.id,
+		type: exportActionTypes.addSuperStickerItemAction,
+		// ...renderer,
+		id: renderer.id,
 		timestamp,
-		timestampUsec,
+		timestampText,
 		authorName,
-		authorChannelId,
 		authorPhoto,
-		stickerUrl,
-		stickerText,
-		amount,
-		currency,
-		stickerDisplayWidth: rdr.stickerDisplayWidth,
-		stickerDisplayHeight: rdr.stickerDisplayHeight,
-		moneyChipBackgroundColor: parseColorCode(rdr.moneyChipBackgroundColor),
-		moneyChipTextColor: parseColorCode(rdr.moneyChipTextColor),
-		backgroundColor: parseColorCode(rdr.backgroundColor),
-		authorNameTextColor: parseColorCode(rdr.authorNameTextColor),
+		authorChannelId,
+		authorBadges,
+		color,
+		stickerLabel,
+		sticker,
+		backgroundColor: parseColorCode(renderer.moneyChipBackgroundColor),
+		...superchat,
+		...unexpectedProperties,
+		// id: rdr.id,
+		// timestamp,
+		// timestampUsec,
+		// authorName,
+		// authorChannelId,
+		// authorPhoto,
+		// stickerUrl,
+		// stickerText,
+		// stickerDisplayWidth: rdr.stickerDisplayWidth,
+		// stickerDisplayHeight: rdr.stickerDisplayHeight,
+		// moneyChipBackgroundColor: parseColorCode(renderer.moneyChipBackgroundColor),
+		// moneyChipTextColor: parseColorCode(rdr.moneyChipTextColor),
+		// backgroundColor: parseColorCode(renderer.backgroundColor),
+		// authorNameTextColor: parseColorCode(rdr.authorNameTextColor),
 	};
 
 	return parsed;
 }
 
 // Membership
-export function parseLiveChatMembershipItemRenderer(renderer: YTLiveChatMembershipItemRenderer) {
+export function parseLiveChatMembershipItemRenderer(renderer: YTLiveChatMembershipItemRenderer, backupTimestamp: BackupTimestamp) {
 	const id = renderer.id;
 	const timestampUsec = renderer.timestampUsec;
-	const timestamp = tsToDate(timestampUsec);
-	const authorName = renderer.authorName ? stringify(renderer.authorName) : undefined;
+	backupTimestamp.set(timestampUsec);
+	const timestamp = tsToNumber(timestampUsec);
+	const timestampText = tsTextToSeconds(renderer.timestampText);
+	const authorName = stringify(renderer.authorName);
+	if (!authorName) {
+		debugLog("[action required] empty authorName (membership Item)", JSON.stringify(renderer));
+	}
 	const authorChannelId = renderer.authorExternalChannelId;
 	const authorPhoto = pickThumbUrl(renderer.authorPhoto);
+	const authorBadges = parseBadges(renderer);
 
 	// observed, MODERATOR
 	// observed, undefined renderer.authorBadges
 	const membership = renderer.authorBadges ? parseMembership(renderer.authorBadges[renderer.authorBadges.length - 1]) : undefined;
 	if (!membership) {
-		debugLog(`missing membership information while parsing neww membership action: ${JSON.stringify(renderer)}`);
+		debugLog(`missing membership information while parsing new membership action: ${JSON.stringify(renderer)}`);
 	}
 
 	const isMilestoneMessage = "empty" in renderer || "message" in renderer;
 
 	if (isMilestoneMessage) {
-		const message = renderer.message ? renderer.message.runs : null;
-		const durationText = renderer
-			.headerPrimaryText!.runs.map((r) => r.text)
-			.join("")
-			.replace("Member for", "")
-			.trim();
+		const message = (renderer.message && stringify(renderer.message)) || null;
+		const emotes = getEmojis(renderer.message?.runs);
+		let headerPrimaryText;
+		if ("headerPrimaryText" in renderer && renderer.headerPrimaryText) {
+			headerPrimaryText = stringify(renderer.headerPrimaryText.runs);
+		}
 		// duration > membership.since
 		// e.g. 12 months > 6 months
-		const duration = durationToSeconds(durationText);
 
-		const level = renderer.headerSubtext ? stringify(renderer.headerSubtext) : undefined;
+		const headerSubtext = stringify(renderer.headerSubtext);
+
+		const unexpectedProperties = findUnexpectedProperties(membershipMilestoneItemProperties, renderer);
+		const unexpectedKeys = [...Object.keys(unexpectedProperties)];
+		if (unexpectedKeys.length > 0) {
+			console.log("Unexpected keys found in [addMembershipMilestoneItemAction]", unexpectedKeys);
+		}
 
 		const parsed: AddMembershipMilestoneItemAction = {
-			type: "addMembershipMilestoneItemAction",
+			type: exportActionTypes.addMembershipMilestoneItemAction,
+			// ...renderer,
 			id,
 			timestamp,
-			timestampUsec,
+			timestampText,
 			authorName,
-			authorChannelId,
 			authorPhoto,
-			membership,
-			level,
+			authorChannelId,
+			authorBadges,
+			color: ColorName.message,
 			message,
-			duration,
-			durationText,
+			emotes,
+			headerPrimaryText,
+			headerSubtext,
+			// membership,
+			// level,
+			// duration,
+			// durationText,
+			...unexpectedProperties,
 		};
 		return parsed;
 	} else {
@@ -254,31 +338,52 @@ export function parseLiveChatMembershipItemRenderer(renderer: YTLiveChatMembersh
 		 * multiple levels -> ["Welcome", "<level>", "!"]
 		 */
 		const subRuns = (renderer.headerSubtext as YTRunContainer<YTTextRun>).runs;
-		const level = subRuns.length > 1 ? subRuns[1].text : undefined;
+		const headerSubtext = stringify(subRuns);
+		const tier = subRuns.length > 1 ? subRuns[1].text : undefined;
+		const method = subRuns[0].text.split(" ")[0];
+		const color = method.toLowerCase().includes("welcome") ? ColorName.join : ColorName.upgrade;
+		const unexpectedProperties = findUnexpectedProperties(membershipItemProperties, renderer);
+		const unexpectedKeys = [...Object.keys(unexpectedProperties)];
+		if (unexpectedKeys.length > 0) {
+			console.log("Unexpected keys found in [addMembershipItemAction]", unexpectedKeys);
+		}
 
 		const parsed: AddMembershipItemAction = {
-			type: "addMembershipItemAction",
+			type: exportActionTypes.addMembershipItemAction,
+			// ...renderer,
 			id,
 			timestamp,
-			timestampUsec,
+			timestampText,
 			authorName,
-			authorChannelId,
 			authorPhoto,
-			membership,
-			level,
+			authorChannelId,
+			authorBadges,
+			color,
+			headerSubtext,
+			method,
+			tier,
+			// membership,
+			// level,
+			...unexpectedProperties,
 		};
 		return parsed;
 	}
 }
 
 // Engagement message
-export function parseLiveChatViewerEngagementMessageRenderer(renderer: YTLiveChatViewerEngagementMessageRenderer) {
+export function parseLiveChatViewerEngagementMessageRenderer(
+	renderer: YTLiveChatViewerEngagementMessageRenderer,
+	backupTimestamp: BackupTimestamp
+) {
 	/**
 	 * YOUTUBE_ROUND: engagement message
 	 * POLL: poll result message
 	 */
 
 	const { id, timestampUsec } = renderer;
+	if (timestampUsec) {
+		backupTimestamp.set(timestampUsec);
+	}
 	if ("simpleText" in renderer.message) {
 		debugLog("[action required] message is simpleText (engagement):", JSON.stringify(renderer));
 	}
@@ -287,73 +392,90 @@ export function parseLiveChatViewerEngagementMessageRenderer(renderer: YTLiveCha
 		return;
 	}
 
-	switch (renderer.icon?.iconType) {
-		case "YOUTUBE_ROUND": {
-			const timestamp = tsToDate(timestampUsec!);
-			const actionUrl = renderer.actionButton?.buttonRenderer.navigationEndpoint.urlEndpoint.url;
-			const parsed: AddViewerEngagementMessageAction = {
-				type: "addViewerEngagementMessageAction",
-				id,
-				message: renderer.message,
-				actionUrl,
-				timestamp,
-				timestampUsec: timestampUsec!,
-			};
-			return parsed;
+	if (renderer.icon && renderer.icon.iconType === "YOUTUBE_ROUND") {
+		let timestamp;
+		if (timestampUsec) {
+			timestamp = tsToNumber(timestampUsec);
+		} else {
+			timestamp = backupTimestamp.get();
 		}
-		case "POLL": {
-			// [{"id":"ChkKF1hTbnRZYzNTQk91R2k5WVA1cDJqd0FV","message":{"runs":[{"text":"生まれは？","bold":true},{"text":"\n"},{"text":"平成 (80%)"},{"text":"\n"},{"text":"昭和 (19%)"},{"text":"\n"},{"text":"\n"},{"text":"Poll complete: 84 votes"}]},"messageType":"poll","type":"addViewerEngagementMessageAction","originVideoId":"1SzuFU7t450","originChannelId":"UC3Z7UaEe_vMoKRz9ABQrI5g"}]
-			//  <!> addViewerEngagementMessageAction [{"id":"ChkKF3VDX3RZWS1PQl95QWk5WVBrUGFENkFz","message":{"runs":[{"text":"2 (73%)"},{"text":"\n"},{"text":"4 (26%)"},{"text":"\n"},{"text":"\n"},{"text":"Poll complete: 637 votes"}]},"messageType":"poll","type":"addViewerEngagementMessageAction","originVideoId":"8sne4hKHNeo","originChannelId":"UC2hc-00y-MSR6eYA4eQ4tjQ"}]
-			// Poll complete: 637 votes
-			// Poll complete: 1.9K votes
-			// split runs by {"text": "\n"}
-			// has question: {text: "...", "bold": true}, {emoji: ...}
-			//               {emoji: ...}, {text: "...", "bold": true}
-			// otherwise:    {emoji: ...}, {text: " (\d%)"}
+		// const actionUrl = renderer.actionButton?.buttonRenderer.navigationEndpoint.urlEndpoint.url;
+		const parsed: AddViewerEngagementMessageAction = {
+			type: exportActionTypes.addViewerEngagementMessageAction,
+			// ...renderer,
+			id,
+			timestamp,
+			message: stringify(renderer.message),
+			// actionUrl,
+			// timestampUsec: timestampUsec!,
+		};
+		return parsed;
+	} else if (renderer.icon && renderer.icon.iconType === "POLL") {
+		// [{"id":"ChkKF1hTbnRZYzNTQk91R2k5WVA1cDJqd0FV","message":{"runs":[{"text":"生まれは？","bold":true},{"text":"\n"},{"text":"平成 (80%)"},{"text":"\n"},{"text":"昭和 (19%)"},{"text":"\n"},{"text":"\n"},{"text":"Poll complete: 84 votes"}]},"messageType":"poll","type":"addViewerEngagementMessageAction","originVideoId":"1SzuFU7t450","originChannelId":"UC3Z7UaEe_vMoKRz9ABQrI5g"}]
+		//  <!> addViewerEngagementMessageAction [{"id":"ChkKF3VDX3RZWS1PQl95QWk5WVBrUGFENkFz","message":{"runs":[{"text":"2 (73%)"},{"text":"\n"},{"text":"4 (26%)"},{"text":"\n"},{"text":"\n"},{"text":"Poll complete: 637 votes"}]},"messageType":"poll","type":"addViewerEngagementMessageAction","originVideoId":"8sne4hKHNeo","originChannelId":"UC2hc-00y-MSR6eYA4eQ4tjQ"}]
+		// Poll complete: 637 votes
+		// Poll complete: 1.9K votes
+		// split runs by {"text": "\n"}
+		// has question: {text: "...", "bold": true}, {emoji: ...}
+		//               {emoji: ...}, {text: "...", "bold": true}
+		// otherwise:    {emoji: ...}, {text: " (\d%)"}
 
-			const runs = (renderer.message as YTRunContainer<YTTextRun>).runs;
-			const runsNL = splitRunsByNewLines(runs);
-			const hasQuestion = runsNL[0].some((run) => "bold" in run && run.bold == true);
-			const question = hasQuestion ? runsNL[0] : undefined;
-			const total = /: (.+?) vote/.exec(runs[runs.length - 1].text)![1];
-			const choiceStart = hasQuestion ? 1 : 0;
-			const choices = runsNL.slice(choiceStart, -2).map((choiceRuns) => {
-				const last = choiceRuns[choiceRuns.length - 1] as YTTextRun;
-				const [lastTextFragment, votePercentage] = /(?:^(.+?))? \((\d+%)\)$/.exec(last.text)!.slice(1);
-				let text = choiceRuns;
-				if (lastTextFragment) {
-					(text[text.length - 1] as YTTextRun).text = lastTextFragment;
-				} else {
-					text.pop();
-				}
-				return { text, votePercentage };
-			});
+		const runs = (renderer.message as YTRunContainer<YTTextRun>).runs;
+		const runsNL = splitRunsByNewLines(runs);
+		const hasQuestion = runsNL[0].some((run) => "bold" in run && run.bold == true);
+		const question = hasQuestion ? stringify(runsNL[0]) : undefined;
+		const total = /: (.+?) vote/.exec(runs[runs.length - 1].text)![1];
+		const choiceStart = hasQuestion ? 1 : 0;
+		const choices = runsNL.slice(choiceStart, -2).map((choiceRuns) => {
+			const last = choiceRuns[choiceRuns.length - 1] as YTTextRun;
+			const [lastTextFragment, votePercentage] = /(?:^(.+?))? \((\d+%)\)$/.exec(last.text)!.slice(1);
+			const text = choiceRuns;
+			if (lastTextFragment) {
+				(text[text.length - 1] as YTTextRun).text = lastTextFragment;
+			} else {
+				text.pop();
+			}
+			return { text: stringify(text), votePercentage };
+		});
 
-			const parsed: AddPollResultAction = {
-				type: "addPollResultAction",
-				id,
-				question,
-				total,
-				choices,
-			};
-			return parsed;
+		let timestamp;
+		if (timestampUsec) {
+			timestamp = tsToNumber(timestampUsec);
+		} else {
+			timestamp = backupTimestamp.get();
 		}
-		default:
-			debugLog("[action required] unknown icon type (engagement message):", JSON.stringify(renderer));
+
+		const parsed: AddPollResultAction = {
+			type: exportActionTypes.addPollResultAction,
+			id,
+			timestamp,
+			// ...renderer,
+			authorName: "Poll Result",
+			color: ColorName.poll,
+			question,
+			total,
+			choices,
+		};
+		return parsed;
+	} else {
+		debugLog("[action required] unknown icon type (engagement message):", JSON.stringify(renderer));
 	}
 }
 
 // Placeholder chat
-export function parseLiveChatPlaceholderItemRenderer(renderer: YTLiveChatPlaceholderItemRenderer) {
+export function parseLiveChatPlaceholderItemRenderer(renderer: YTLiveChatPlaceholderItemRenderer, backupTimestamp: BackupTimestamp) {
 	const id = renderer.id;
 	const timestampUsec = renderer.timestampUsec;
-	const timestamp = tsToDate(timestampUsec);
+	backupTimestamp.set(timestampUsec);
+	const timestamp = tsToNumber(timestampUsec);
 
 	const parsed: AddPlaceholderItemAction = {
-		type: "addPlaceholderItemAction",
+		type: exportActionTypes.addPlaceholderItemAction,
+		// ...renderer,
+		// isUnknown: true,
 		id,
 		timestamp,
-		timestampUsec,
+		// timestampUsec,
 	};
 	return parsed;
 }
@@ -361,131 +483,193 @@ export function parseLiveChatPlaceholderItemRenderer(renderer: YTLiveChatPlaceho
 // Mode change message
 export function parseLiveChatModeChangeMessageRenderer(renderer: YTLiveChatModeChangeMessageRenderer) {
 	const text = stringify(renderer.text);
-	const description = stringify(renderer.subtext);
+	// const description = stringify(renderer.subtext);
 
-	let mode = LiveChatMode.Unknown;
+	// let mode = LiveChatMode.Unknown;
 	if (/Slow mode/.test(text)) {
-		mode = LiveChatMode.Slow;
+		// mode = LiveChatMode.Slow;
 	} else if (/Members-only mode/.test(text)) {
-		mode = LiveChatMode.MembersOnly;
+		// mode = LiveChatMode.MembersOnly;
 	} else if (/subscribers-only/.test(text)) {
-		mode = LiveChatMode.SubscribersOnly;
+		// mode = LiveChatMode.SubscribersOnly;
 	} else {
 		debugLog("[action required] Unrecognized mode (modeChangeAction):", JSON.stringify(renderer));
 	}
 
-	const enabled = /(is|turned) on/.test(text);
+	// const enabled = /(is|turned) on/.test(text);
 
-	const parsed: ModeChangeAction = {
-		type: "modeChangeAction",
-		mode,
-		enabled,
-		description,
+	const parsed: UnknownAction = {
+		type: exportActionTypes.modeChangeAction,
+		...renderer,
+		isUnknown: true,
+		// mode,
+		// enabled,
+		// description,
 	};
 	return parsed;
 }
 
 // Sponsorships gift purchase announcement
 export function parseLiveChatSponsorshipsGiftPurchaseAnnouncementRenderer(
-	renderer: YTLiveChatSponsorshipsGiftPurchaseAnnouncementRenderer
-): MembershipGiftPurchaseAction | MembershipGiftPurchaseTickerContent {
+	renderer: YTLiveChatSponsorshipsGiftPurchaseAnnouncementRenderer,
+	backupTimestamp: BackupTimestamp
+) {
 	const id = renderer.id;
 	/** timestampUsec can be undefined when passed from ticker action */
 	const timestampUsec = renderer.timestampUsec;
-	const timestamp = timestampUsec ? tsToDate(timestampUsec) : undefined;
+	const timestamp = timestampUsec ? tsToNumber(timestampUsec) : undefined;
 	const authorChannelId = renderer.authorExternalChannelId;
+	const timestampText = tsTextToSeconds(renderer.timestampText);
 
 	const header = renderer.header.liveChatSponsorshipsHeaderRenderer;
 	const authorName = stringify(header.authorName);
 	const authorPhoto = pickThumbUrl(header.authorPhoto);
+	const authorBadges = parseBadges(header);
 	const channelName = header.primaryText.runs[3].text;
 	const amount = parseInt(header.primaryText.runs[1].text, 10);
 	const image = header.image.thumbnails[0].url;
+	const primaryText = stringify(header.primaryText);
+
+	const unexpectedProperties = findUnexpectedProperties(membershipGiftPurchaseProperties, renderer);
+	const unexpectedProperties2 = findUnexpectedProperties(
+		membershipGiftPurchaseHeaderProperties,
+		renderer.header.liveChatSponsorshipsHeaderRenderer
+	);
+	const unexpectedKeys = [...Object.keys(unexpectedProperties), ...Object.keys(unexpectedProperties2)];
+	if (unexpectedKeys.length > 0) {
+		console.log("Unexpected keys found in [membershipGiftPurchaseAction]", unexpectedKeys);
+	}
 
 	if (!authorName) {
 		debugLog("[action required] empty authorName (gift purchase)", JSON.stringify(renderer));
 	}
 
-	const membership = parseMembership(header.authorBadges?.[header.authorBadges?.length - 1])!;
+	const membership = parseMembership(header.authorBadges?.[header.authorBadges?.length - 1]);
 
 	if (!membership) {
 		debugLog("[action required] empty membership (gift purchase)", JSON.stringify(renderer));
 	}
 
 	if (!timestampUsec || !timestamp) {
-		const tickerContent: MembershipGiftPurchaseTickerContent = {
+		const unexpectedProperties = findUnexpectedProperties(membershipGiftPurchaseTickerProperties, renderer);
+		const unexpectedProperties2 = findUnexpectedProperties(
+			membershipGiftPurchaseTickerHeaderProperties,
+			renderer.header.liveChatSponsorshipsHeaderRenderer
+		);
+		const unexpectedKeys = [...Object.keys(unexpectedProperties), ...Object.keys(unexpectedProperties2)];
+		if (unexpectedKeys.length > 0) {
+			console.log("Unexpected keys found in [membershipGiftPurchaseTickerAction]", unexpectedKeys);
+		}
+		const timestamp = backupTimestamp.get();
+		const tickerContent: MembershipGiftPurchaseTickerAction = {
+			type: exportActionTypes.membershipGiftPurchaseTickerAction,
 			id,
+			timestamp,
+			timestampText,
+			authorName,
+			authorPhoto,
+			authorChannelId,
+			authorBadges,
+			color: ColorName.gift,
+			primaryText,
 			channelName,
 			amount,
-			membership,
-			authorName,
-			authorChannelId,
-			authorPhoto,
+			// membership,
 			image,
+			...unexpectedProperties,
+			...unexpectedProperties2,
+			// ...renderer,
+			// id,
+			// channelName,
+			// amount,
+			// membership,
+			// authorName,
+			// authorChannelId,
+			// authorPhoto,
+			// image,
 		};
 		return tickerContent;
 	}
-
+	backupTimestamp.set(timestampUsec);
 	const parsed: MembershipGiftPurchaseAction = {
-		type: "membershipGiftPurchaseAction",
+		type: exportActionTypes.membershipGiftPurchaseAction,
+		// ...renderer,
 		id,
 		timestamp,
-		timestampUsec,
+		timestampText,
+		authorName,
+		authorPhoto,
+		authorChannelId,
+		authorBadges,
+		color: ColorName.gift,
+		// timestampUsec,
+		primaryText,
 		channelName,
 		amount,
-		membership,
-		authorName,
-		authorChannelId,
-		authorPhoto,
+		// membership,
 		image,
+		...unexpectedProperties,
+		...unexpectedProperties2,
 	};
 	return parsed;
 }
 
 // Sponsorships gift redemption announcement
 export function parseLiveChatSponsorshipsGiftRedemptionAnnouncementRenderer(
-	renderer: YTLiveChatSponsorshipsGiftRedemptionAnnouncementRenderer
+	renderer: YTLiveChatSponsorshipsGiftRedemptionAnnouncementRenderer,
+	backupTimestamp: BackupTimestamp
 ) {
 	const id = renderer.id;
 	const timestampUsec = renderer.timestampUsec;
-	const timestamp = tsToDate(timestampUsec);
+	backupTimestamp.set(timestampUsec);
+	const timestamp = tsToNumber(timestampUsec);
+	const timestampText = tsTextToSeconds(renderer.timestampText);
 	const authorChannelId = renderer.authorExternalChannelId;
 
 	const authorName = stringify(renderer.authorName);
 	const authorPhoto = pickThumbUrl(renderer.authorPhoto);
 	const senderName = renderer.message.runs[1].text;
+	const message = stringify(renderer.message);
+	const authorBadges = parseBadges(renderer);
 
 	if (!authorName) {
 		debugLog("[action required] empty authorName (gift redemption)", JSON.stringify(renderer));
 	}
 
 	const parsed: MembershipGiftRedemptionAction = {
-		type: "membershipGiftRedemptionAction",
+		type: exportActionTypes.membershipGiftRedemptionAction,
+		// ...renderer,
 		id,
 		timestamp,
-		timestampUsec,
-		senderName,
+		timestampText,
 		authorName,
-		authorChannelId,
 		authorPhoto,
+		authorChannelId,
+		authorBadges,
+		color: ColorName.join,
+		senderName,
+		message,
 	};
 	return parsed;
 }
 
 // Moderation message
-export function parseLiveChatModerationMessageRenderer(renderer: YTLiveChatModerationMessageRenderer) {
-	const id = renderer.id;
+export function parseLiveChatModerationMessageRenderer(renderer: YTLiveChatModerationMessageRenderer, backupTimestamp: BackupTimestamp) {
+	// const id = renderer.id;
 	const timestampUsec = renderer.timestampUsec;
-	const timestamp = tsToDate(timestampUsec);
+	backupTimestamp.set(timestampUsec);
+	// const timestamp = tsToNumber(timestampUsec);
 
-	const message = renderer.message.runs;
+	// const message = renderer.message.runs;
 
-	const parsed: ModerationMessageAction = {
-		type: "moderationMessageAction",
-		id,
-		timestamp,
-		timestampUsec,
-		message,
+	const parsed: UnknownAction = {
+		type: exportActionTypes.moderationMessageAction,
+		...renderer,
+		isUnknown: true,
+		// id,
+		// timestamp,
+		// timestampUsec,
+		// message,
 	};
 	return parsed;
 }

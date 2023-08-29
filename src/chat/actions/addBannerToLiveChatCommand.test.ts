@@ -2,6 +2,7 @@ import assert from "assert";
 import { it } from "vitest";
 import { YTAddBannerToLiveChatCommand } from "../../interfaces/yt/chat";
 import { parseAddBannerToLiveChatCommand } from "./addBannerToLiveChatCommand";
+import { ItemActionTypes } from "../../interfaces";
 
 it("can parse product item", () => {
 	const payload: YTAddBannerToLiveChatCommand = {
@@ -119,5 +120,5 @@ it("can parse product item", () => {
 	};
 	const result = parseAddBannerToLiveChatCommand(payload);
 	// console.log(result);
-	assert(result?.type === "addProductBannerAction");
+	assert(result?.type === ItemActionTypes.addProductBannerAction);
 });

@@ -11,6 +11,23 @@ export const SUPERCHAT_SIGNIFICANCE_MAP = {
  * Map from headerBackgroundColor to color name
  */
 
+export enum ColorName {
+	red = "red",
+	pink = "pink",
+	orange = "orange",
+	yellow = "yellow",
+	green = "green",
+	lightblue = "lightblue",
+	blue = "blue",
+	message = "message",
+	gift = "gift",
+	join = "join",
+	upgrade = "upgrade",
+	chat = "chat",
+	poll = "poll",
+	raid = "raid",
+}
+
 export const SUPERCHAT_COLOR_MAP = {
 	"4279592384": "blue",
 	"4278237396": "lightblue",
