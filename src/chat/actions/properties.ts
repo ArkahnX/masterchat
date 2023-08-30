@@ -79,6 +79,7 @@ export const membershipMilestoneItemProperties = [
 	"contextMenuAccessibility",
 	"trackingParams",
 	"empty",
+	"footerButton",
 ];
 
 export const membershipItemProperties = [
@@ -93,9 +94,10 @@ export const membershipItemProperties = [
 	"contextMenuEndpoint",
 	"contextMenuAccessibility",
 	"trackingParams",
+	"footerButton",
 ];
 
-export const membershipGiftPurchaseProperties = ["id", "timestampUsec", "authorExternalChannelId", "header"];
+export const membershipGiftPurchaseProperties = ["id", "timestampUsec", "authorExternalChannelId", "header", "optInPrompt"];
 
 export const membershipGiftPurchaseHeaderProperties = [
 	"authorName",
@@ -105,9 +107,10 @@ export const membershipGiftPurchaseHeaderProperties = [
 	"contextMenuEndpoint",
 	"contextMenuAccessibility",
 	"image",
+	"optInPrompt",
 ];
 
-export const membershipGiftPurchaseTickerProperties = ["authorExternalChannelId", "header"];
+export const membershipGiftPurchaseTickerProperties = ["authorExternalChannelId", "header", "optInPrompt"];
 
 export const membershipGiftPurchaseTickerHeaderProperties = [
 	"authorName",
@@ -117,9 +120,10 @@ export const membershipGiftPurchaseTickerHeaderProperties = [
 	"contextMenuEndpoint",
 	"contextMenuAccessibility",
 	"image",
+	"optInPrompt",
 ];
 
-export const updatePollProperties = ["choices", "liveChatPollId", "header","trackingParams"];
+export const updatePollProperties = ["choices", "liveChatPollId", "header", "trackingParams"];
 
 export const updatePollHeaderProperties = ["pollQuestion", "thumbnail", "metadataText", "liveChatPollType", "contextMenuButton"];
 
@@ -164,4 +168,5 @@ export const membershipTickerProperties = [
 	"fullDurationSec",
 	"trackingParams",
 	"detailIcon",
+	"footerButton",
 ];
