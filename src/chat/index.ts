@@ -78,7 +78,6 @@ export function parseAction(action: YTAction, backupTimestamp: BackupTimestamp) 
 	} catch (error: any) {
 		// debugLog("[action required] Error occurred while parsing action:", error.message || error, JSON.stringify(action));
 		console.error(error,JSON.stringify(action));
-		process.exit();
 		return parserError(action, error);
 	}
 }
