@@ -15,6 +15,11 @@ import {
 import { tsToNumber } from "../utils";
 
 export function pickThumbUrl(thumbList: YTThumbnailList): string {
+	if("thumbnails" in thumbList === false) {
+		console.error("Unexpectedly missing thumbnails, refer to trace");
+		console.trace();
+		return "";
+	}
 	const fullThumbnail = thumbList.thumbnails[0].url;
 	if (fullThumbnail.indexOf("=") > -1) {
 		return fullThumbnail.split("=")[0];

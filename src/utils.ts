@@ -49,7 +49,7 @@ export function tsToNumber(timestampUsec: string): number {
 
 export function tsTextToSeconds(timestampText?: YTSimpleTextContainer) {
 	const multipliers = [1, 60, 3600];
-	if(!timestampText) {
+	if (!timestampText) {
 		return undefined;
 	}
 	const split = timestampText.simpleText.split(":").reverse();
@@ -182,15 +182,20 @@ export function getEmojis(runs?: YTRun[]) {
 		for (const run of runs) {
 			if ("emoji" in run) {
 				if (storedIds.has(run.emoji.emojiId) === false) {
-					storedIds.add(run.emoji.emojiId);
 					let id = `:${run.emoji.emojiId}:`;
 					if ("shortcuts" in run.emoji) {
 						id = run.emoji.shortcuts[0];
 					}
-					emotes.push({
-						id,
-						image: pickThumbUrl(run.emoji.image),
-					});
+					const image = pickThumbUrl(run.emoji.image);
+					if (image.length) {
+						emotes.push({
+							id,
+							image: pickThumbUrl(run.emoji.image),
+						});
+						storedIds.add(run.emoji.emojiId);
+					} else {
+						console.error("Emote unexpectedly has no image, please check run:\n", JSON.stringify(run));
+					}
 				}
 			}
 		}
