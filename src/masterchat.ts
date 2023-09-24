@@ -628,7 +628,7 @@ export class Masterchat extends EventEmitter {
 					const axiosErrorCode = err.code;
 
 					// handle early timeout
-					if (axiosErrorCode === "ECONNABORTED" || axiosErrorCode === "ERR_REQUEST_ABORTED") {
+					if (axiosErrorCode === "ECONNABORTED" || axiosErrorCode === "ERR_REQUEST_ABORTED" || axiosErrorCode === "ECONNRESET") {
 						if (retryRemaining > 0) {
 							retryRemaining -= 1;
 							this.log(`fetch`, `Retrying ${retryRemaining} / ${retryInterval}ms cause=EARLY_TIMEOUT`);
