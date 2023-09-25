@@ -33,9 +33,13 @@ export function parseUpdateLiveChatPollAction(payload: YTUpdateLiveChatPollActio
 
 	const unexpectedProperties = findUnexpectedProperties(updatePollProperties, renderer);
 	const unexpectedProperties2 = findUnexpectedProperties(updatePollHeaderProperties, header);
-	const unexpectedKeys = [...Object.keys(unexpectedProperties),...Object.keys(unexpectedProperties2)];
-	if(unexpectedKeys.length > 0) {
-		console.log("Unexpected keys found in [parseUpdateLiveChatPollAction]",unexpectedKeys);
+	const unexpectedKeys1 = Object.keys(unexpectedProperties);
+	const unexpectedKeys2 = Object.keys(unexpectedProperties2);
+	if(unexpectedKeys1.length > 0) {
+		console.log("Unexpected keys found in [updatePollProperties]",unexpectedKeys1);
+	}
+	if(unexpectedKeys2.length > 0) {
+		console.log("Unexpected keys found in [updatePollHeaderProperties]",unexpectedKeys2);
 	}
 
 	const parsed: UpdatePollAction = {

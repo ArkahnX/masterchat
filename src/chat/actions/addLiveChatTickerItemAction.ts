@@ -25,7 +25,7 @@ export function parseAddLiveChatTickerItemAction(payload: YTAddLiveChatTickerIte
 		const unexpectedProperties = findUnexpectedProperties(superChatTickerProperties, renderer);
 		const unexpectedKeys = [...Object.keys(unexpectedProperties)];
 		if (unexpectedKeys.length > 0) {
-			console.log("Unexpected keys found in [liveChatTickerPaidMessageItemRenderer]", unexpectedKeys);
+			console.log("Unexpected keys found in [superChatTickerProperties]", unexpectedKeys);
 		}
 		const parsed = parseLiveChatTickerPaidMessageItemRenderer(renderer, backupTimestamp);
 		const combined = Object.assign(unexpectedProperties, parsed);
@@ -36,7 +36,7 @@ export function parseAddLiveChatTickerItemAction(payload: YTAddLiveChatTickerIte
 		const unexpectedProperties = findUnexpectedProperties(superStickerTickerProperties, renderer);
 		const unexpectedKeys = [...Object.keys(unexpectedProperties)];
 		if (unexpectedKeys.length > 0) {
-			console.log("Unexpected keys found in [liveChatTickerPaidStickerItemRenderer]", unexpectedKeys);
+			console.log("Unexpected keys found in [superStickerTickerProperties]", unexpectedKeys);
 		}
 		const parsed = parseLiveChatTickerPaidStickerItemRenderer(renderer, backupTimestamp);
 		const combined = Object.assign(unexpectedProperties, parsed);
@@ -47,7 +47,7 @@ export function parseAddLiveChatTickerItemAction(payload: YTAddLiveChatTickerIte
 		const unexpectedProperties = findUnexpectedProperties(membershipTickerProperties, renderer);
 		const unexpectedKeys = [...Object.keys(unexpectedProperties)];
 		if (unexpectedKeys.length > 0) {
-			console.log("Unexpected keys found in [liveChatTickerSponsorItemRenderer]", unexpectedKeys);
+			console.log("Unexpected keys found in [membershipTickerProperties]", unexpectedKeys);
 		}
 		const parsed = parseLiveChatTickerSponsorItemRenderer(renderer, backupTimestamp);
 		const combined = Object.assign(unexpectedProperties, parsed);

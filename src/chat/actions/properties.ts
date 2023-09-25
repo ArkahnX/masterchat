@@ -38,6 +38,7 @@ export const superChatItemProperties = [
 	"lowerBumper",
 	"buyButton",
 	"pdgPurchasedNoveltyLoggingDirectives",
+	"isV2Style"
 ];
 
 export const superStickerItemProperties = [

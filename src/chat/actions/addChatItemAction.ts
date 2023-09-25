@@ -114,7 +114,7 @@ export function parseLiveChatTextMessageRenderer(renderer: YTLiveChatTextMessage
 	const unexpectedProperties = findUnexpectedProperties(chatItemProperties, renderer);
 	const unexpectedKeys = [...Object.keys(unexpectedProperties)];
 	if (unexpectedKeys.length > 0) {
-		console.log("Unexpected keys found in [parseLiveChatTextMessageRenderer]", unexpectedKeys);
+		console.log("Unexpected keys found in [chatItemProperties]", unexpectedKeys);
 	}
 	// const contextMenuEndpointParams = renderer.contextMenuEndpoint!.liveChatItemContextMenuEndpoint.params;
 
@@ -170,7 +170,7 @@ export function parseLiveChatPaidMessageRenderer(renderer: YTLiveChatPaidMessage
 	const unexpectedProperties = findUnexpectedProperties(superChatItemProperties, renderer);
 	const unexpectedKeys = [...Object.keys(unexpectedProperties)];
 	if (unexpectedKeys.length > 0) {
-		console.log("Unexpected keys found in [parseLiveChatPaidMessageRenderer]", unexpectedKeys);
+		console.log("Unexpected keys found in [superChatItemProperties]", unexpectedKeys);
 	}
 
 	const message = (renderer.message && stringify(renderer.message)) || null;
@@ -230,7 +230,7 @@ export function parseLiveChatPaidStickerRenderer(
 	const unexpectedProperties = findUnexpectedProperties(superStickerItemProperties, renderer);
 	const unexpectedKeys = [...Object.keys(unexpectedProperties)];
 	if (unexpectedKeys.length > 0) {
-		console.log("Unexpected keys found in [parseLiveChatPaidStickerRenderer]", unexpectedKeys);
+		console.log("Unexpected keys found in [superStickerItemProperties]", unexpectedKeys);
 	}
 
 	const parsed: AddSuperStickerItemAction = {
@@ -307,7 +307,7 @@ export function parseLiveChatMembershipItemRenderer(renderer: YTLiveChatMembersh
 		const unexpectedProperties = findUnexpectedProperties(membershipMilestoneItemProperties, renderer);
 		const unexpectedKeys = [...Object.keys(unexpectedProperties)];
 		if (unexpectedKeys.length > 0) {
-			console.log("Unexpected keys found in [addMembershipMilestoneItemAction]", unexpectedKeys);
+			console.log("Unexpected keys found in [membershipMilestoneItemProperties]", unexpectedKeys);
 		}
 
 		const parsed: AddMembershipMilestoneItemAction = {
@@ -345,7 +345,7 @@ export function parseLiveChatMembershipItemRenderer(renderer: YTLiveChatMembersh
 		const unexpectedProperties = findUnexpectedProperties(membershipItemProperties, renderer);
 		const unexpectedKeys = [...Object.keys(unexpectedProperties)];
 		if (unexpectedKeys.length > 0) {
-			console.log("Unexpected keys found in [addMembershipItemAction]", unexpectedKeys);
+			console.log("Unexpected keys found in [membershipItemProperties]", unexpectedKeys);
 		}
 
 		const parsed: AddMembershipItemAction = {
@@ -535,9 +535,13 @@ export function parseLiveChatSponsorshipsGiftPurchaseAnnouncementRenderer(
 		membershipGiftPurchaseHeaderProperties,
 		renderer.header.liveChatSponsorshipsHeaderRenderer
 	);
-	const unexpectedKeys = [...Object.keys(unexpectedProperties), ...Object.keys(unexpectedProperties2)];
-	if (unexpectedKeys.length > 0) {
-		console.log("Unexpected keys found in [membershipGiftPurchaseAction]", unexpectedKeys);
+	const unexpectedKeys1 = Object.keys(unexpectedProperties);
+	if (unexpectedKeys1.length > 0) {
+		console.log("Unexpected keys found in [membershipGiftPurchaseProperties]", unexpectedKeys1);
+	}
+	const unexpectedKeys2 = Object.keys(unexpectedProperties2);
+	if (unexpectedKeys2.length > 0) {
+		console.log("Unexpected keys found in [membershipGiftPurchaseHeaderProperties]", unexpectedKeys2);
 	}
 
 	if (!authorName) {
@@ -556,9 +560,13 @@ export function parseLiveChatSponsorshipsGiftPurchaseAnnouncementRenderer(
 			membershipGiftPurchaseTickerHeaderProperties,
 			renderer.header.liveChatSponsorshipsHeaderRenderer
 		);
-		const unexpectedKeys = [...Object.keys(unexpectedProperties), ...Object.keys(unexpectedProperties2)];
-		if (unexpectedKeys.length > 0) {
-			console.log("Unexpected keys found in [membershipGiftPurchaseTickerAction]", unexpectedKeys);
+		const unexpectedKeys1 = Object.keys(unexpectedProperties);
+		const unexpectedKeys2 = Object.keys(unexpectedProperties2);
+		if (unexpectedKeys1.length > 0) {
+			console.log("Unexpected keys found in [membershipGiftPurchaseTickerProperties]", unexpectedKeys1);
+		}
+		if (unexpectedKeys2.length > 0) {
+			console.log("Unexpected keys found in [membershipGiftPurchaseTickerHeaderProperties]", unexpectedKeys2);
 		}
 		const timestamp = backupTimestamp.get();
 		const tickerContent: MembershipGiftPurchaseTickerAction = {
