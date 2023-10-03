@@ -63,6 +63,7 @@ export const superStickerItemProperties = [
 	"buyButton",
 	"headerOverlayImage",
 	"lowerBumper",
+	"isV2Style",
 ];
 
 export const membershipMilestoneItemProperties = [

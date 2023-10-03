@@ -93,6 +93,7 @@ export function getColor(renderer: YTLiveChatPaidMessageRenderer | YTLiveChatPai
 		"#1de9b6ff": ColorName.green,
 		"#00e5ffff": ColorName.lightblue,
 		"#1e88e5ff": ColorName.blue,
+		"#1565c0ff": ColorName.blue,
 	};
 
 	if ("bodyBackgroundColor" in renderer && renderer.bodyBackgroundColor) {
@@ -117,6 +118,14 @@ export function getColor(renderer: YTLiveChatPaidMessageRenderer | YTLiveChatPai
 			return colorTable[color];
 		} else {
 			console.error(`Color not in colortable [${color}] headerBackgroundColor`);
+		}
+	}
+	if ("backgroundColor" in renderer && renderer.backgroundColor) {
+		const color = parseColorCode(renderer.backgroundColor);
+		if (color in colorTable) {
+			return colorTable[color];
+		} else {
+			console.error(`Color not in colortable [${color}] backgroundColor`);
 		}
 	}
 	console.error("Undiscovered superchat color",JSON.stringify(renderer));
