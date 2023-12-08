@@ -67,51 +67,58 @@ export type UsefulActions =
 	| MembershipGiftPurchaseAction
 	| MembershipGiftRedemptionAction;
 
+export type DebugActions =
+	| ModerationMessageAction
+	| MarkChatItemAsDeletedAction
+	| MarkChatItemsByAuthorAsDeletedAction
+	| RemoveChatItemAction
+	| RemoveChatItemByAuthorAction;
+
 export enum ItemActionTypes {
-	addChatItemAction="addChatItemAction",
-	addSuperChatItemAction="addSuperChatItemAction",
-	addSuperStickerItemAction="addSuperStickerItemAction",
-	addMembershipItemAction="addMembershipItemAction",
-	addMembershipMilestoneItemAction="addMembershipMilestoneItemAction",
-	addPlaceholderItemAction="addPlaceholderItemAction",
-	replaceChatItemAction="replaceChatItemAction",
-	markChatItemAsDeletedAction="markChatItemAsDeletedAction",
-	markChatItemsByAuthorAsDeletedAction="markChatItemsByAuthorAsDeletedAction",
-	membershipGiftPurchaseTickerAction="membershipGiftPurchaseTickerAction",
-	addBannerAction="addBannerAction",
-	removeBannerAction="removeBannerAction",
-	addIncomingRaidBannerAction="addIncomingRaidBannerAction",
-	addOutgoingRaidBannerAction="addOutgoingRaidBannerAction",
-	addProductBannerAction="addProductBannerAction",
-	addViewerEngagementMessageAction="addViewerEngagementMessageAction",
-	showPanelAction="showPanelAction",
-	showPollPanelAction="showPollPanelAction",
-	closePanelAction="closePanelAction",
-	updatePollAction="updatePollAction",
-	addPollResultAction="addPollResultAction",
-	showTooltipAction="showTooltipAction",
-	modeChangeAction="modeChangeAction",
-	membershipGiftPurchaseAction="membershipGiftPurchaseAction",
-	membershipGiftRedemptionAction="membershipGiftRedemptionAction",
-	moderationMessageAction="moderationMessageAction",
-	removeChatItemAction="removeChatItemAction",
-	removeChatItemByAuthorAction="removeChatItemByAuthorAction",
-	unknown="unknown",
-	parserError="parserError",
-	addSuperChatTickerAction="addSuperChatTickerAction",
-	addSuperStickerTickerAction="addSuperStickerTickerAction",
-	addMembershipTickerAction="addMembershipTickerAction",
-	addLiveChatTickerItemAction="addLiveChatTickerItemAction",
-	addBannerToLiveChatCommand="addBannerToLiveChatCommand",
-	removeBannerForLiveChatCommand="removeBannerForLiveChatCommand",
-	showLiveChatTooltipCommand="showLiveChatTooltipCommand",
-	showLiveChatActionPanelAction="showLiveChatActionPanelAction",
-	updateLiveChatPollAction="updateLiveChatPollAction",
-	closeLiveChatActionPanelAction="closeLiveChatActionPanelAction",
-	liveChatReportModerationStateCommand="liveChatReportModerationStateCommand"
+	addChatItemAction = "addChatItemAction",
+	addSuperChatItemAction = "addSuperChatItemAction",
+	addSuperStickerItemAction = "addSuperStickerItemAction",
+	addMembershipItemAction = "addMembershipItemAction",
+	addMembershipMilestoneItemAction = "addMembershipMilestoneItemAction",
+	addPlaceholderItemAction = "addPlaceholderItemAction",
+	replaceChatItemAction = "replaceChatItemAction",
+	markChatItemAsDeletedAction = "markChatItemAsDeletedAction",
+	markChatItemsByAuthorAsDeletedAction = "markChatItemsByAuthorAsDeletedAction",
+	membershipGiftPurchaseTickerAction = "membershipGiftPurchaseTickerAction",
+	addBannerAction = "addBannerAction",
+	removeBannerAction = "removeBannerAction",
+	addIncomingRaidBannerAction = "addIncomingRaidBannerAction",
+	addOutgoingRaidBannerAction = "addOutgoingRaidBannerAction",
+	addProductBannerAction = "addProductBannerAction",
+	addViewerEngagementMessageAction = "addViewerEngagementMessageAction",
+	showPanelAction = "showPanelAction",
+	showPollPanelAction = "showPollPanelAction",
+	closePanelAction = "closePanelAction",
+	updatePollAction = "updatePollAction",
+	addPollResultAction = "addPollResultAction",
+	showTooltipAction = "showTooltipAction",
+	modeChangeAction = "modeChangeAction",
+	membershipGiftPurchaseAction = "membershipGiftPurchaseAction",
+	membershipGiftRedemptionAction = "membershipGiftRedemptionAction",
+	moderationMessageAction = "moderationMessageAction",
+	removeChatItemAction = "removeChatItemAction",
+	removeChatItemByAuthorAction = "removeChatItemByAuthorAction",
+	unknown = "unknown",
+	parserError = "parserError",
+	addSuperChatTickerAction = "addSuperChatTickerAction",
+	addSuperStickerTickerAction = "addSuperStickerTickerAction",
+	addMembershipTickerAction = "addMembershipTickerAction",
+	addLiveChatTickerItemAction = "addLiveChatTickerItemAction",
+	addBannerToLiveChatCommand = "addBannerToLiveChatCommand",
+	removeBannerForLiveChatCommand = "removeBannerForLiveChatCommand",
+	showLiveChatTooltipCommand = "showLiveChatTooltipCommand",
+	showLiveChatActionPanelAction = "showLiveChatActionPanelAction",
+	updateLiveChatPollAction = "updateLiveChatPollAction",
+	closeLiveChatActionPanelAction = "closeLiveChatActionPanelAction",
+	liveChatReportModerationStateCommand = "liveChatReportModerationStateCommand",
 }
 
-export enum exportActionTypes  {
+export enum exportActionTypes {
 	addChatItemAction,
 	addSuperChatItemAction,
 	addSuperStickerItemAction,
@@ -152,7 +159,7 @@ export enum exportActionTypes  {
 	showLiveChatActionPanelAction,
 	updateLiveChatPollAction,
 	closeLiveChatActionPanelAction,
-	liveChatReportModerationStateCommand
+	liveChatReportModerationStateCommand,
 }
 
 export interface ReplaceChatItemAction {
@@ -273,7 +280,7 @@ export interface ShowPollPanelAction {
 	type: exportActionTypes.showPollPanelAction;
 	targetId: string;
 	id: string;
-	color:ColorName.poll;
+	color: ColorName.poll;
 	pollType: YTLiveChatPollType;
 	question?: string;
 	choices: YTLiveChatPollChoice[];
@@ -285,7 +292,7 @@ export interface AddPollResultAction {
 	type: exportActionTypes.addPollResultAction;
 	authorName: string;
 	timestamp: number;
-	color:ColorName.poll;
+	color: ColorName.poll;
 	id: string;
 	question?: string;
 	total: string;
