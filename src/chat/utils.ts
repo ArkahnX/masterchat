@@ -1,5 +1,6 @@
 import {
 	YTAction,
+	YTLiveChatBannerPollRenderer,
 	YTLiveChatMembershipItemRenderer,
 	YTLiveChatPaidMessageRenderer,
 	YTLiveChatPaidStickerRenderer,
@@ -15,7 +16,7 @@ import {
 import { tsToNumber } from "../utils";
 
 export function pickThumbUrl(thumbList: YTThumbnailList): string {
-	if("thumbnails" in thumbList === false) {
+	if ("thumbnails" in thumbList === false) {
 		console.error("Unexpectedly missing thumbnails, refer to trace");
 		console.trace();
 		return "";
@@ -53,6 +54,7 @@ export function findUnexpectedProperties(
 		| YTLiveChatTickerPaidMessageItemRenderer
 		| YTLiveChatTickerPaidStickerItemRenderer
 		| YTLiveChatTickerSponsorItemRenderer
+		| YTLiveChatBannerPollRenderer
 ) {
 	const unexpectedProperties: Record<string, unknown> = {};
 	for (const [property, value] of Object.entries(renderer)) {

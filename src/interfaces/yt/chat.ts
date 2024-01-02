@@ -248,9 +248,10 @@ export interface YTAction {
 	showLiveChatActionPanelAction?: YTShowLiveChatActionPanelAction;
 	updateLiveChatPollAction?: YTUpdateLiveChatPollAction;
 	closeLiveChatActionPanelAction?: YTCloseLiveChatActionPanelAction;
-	liveChatReportModerationStateCommand: YTLiveChatReportModerationStateCommand
+	liveChatReportModerationStateCommand: YTLiveChatReportModerationStateCommand;
 }
 
+// eslint-disable-next-line @typescript-eslint/no-empty-interface
 export interface YTLiveChatReportModerationStateCommand {}
 
 export interface YTAddChatItemAction {
@@ -389,6 +390,10 @@ export interface YTLiveChatProductItemRendererContainer {
 	liveChatProductItemRenderer: YTLiveChatProductItemRenderer;
 }
 
+export interface YTLiveChatBannerPollRendererContainter {
+	liveChatBannerPollRenderer: YTLiveChatBannerPollRenderer;
+}
+
 // LiveChat Renderers
 
 export interface YTLiveChatTextMessageRenderer {
@@ -401,6 +406,8 @@ export interface YTLiveChatTextMessageRenderer {
 	authorExternalChannelId: string;
 
 	authorBadges?: YTAuthorBadge[];
+	creatorHeart?: YTThumbnailList;
+	isReactionMessage?: boolean;
 
 	// unavailable in banners
 	contextMenuEndpoint?: YTLiveChatItemContextMenuEndpointContainer;
@@ -597,7 +604,11 @@ export interface YTLiveChatPlaceholderItemRenderer {
 export interface YTLiveChatBannerRenderer {
 	actionId: string;
 	targetId: "live-chat-banner" | string;
-	contents: YTLiveChatTextMessageRendererContainer | YTLiveChatBannerRedirectRendererContainer | YTLiveChatProductItemRendererContainer;
+	contents:
+		| YTLiveChatTextMessageRendererContainer
+		| YTLiveChatBannerRedirectRendererContainer
+		| YTLiveChatProductItemRendererContainer
+		| YTLiveChatBannerPollRendererContainter;
 	viewerIsCreator: boolean;
 	header?: YTLiveChatBannerRendererHeader;
 	isStackable?: boolean;
@@ -687,6 +698,17 @@ export interface YTLiveChatProductItemRenderer {
 	isVerified: boolean;
 }
 
+export interface YTLiveChatBannerPollRenderer {
+	pollQuestion: {
+		runs: [{ text: string; textColor: number; fontFace: string }];
+	};
+	authorPhoto: YTThumbnailList;
+	pollChoices: YTLiveChatPollBannerChoice[];
+	collapsedStateEntityKey: string;
+	liveChatPollStateEntityKey: string;
+	contextMenuButton: YTContextMenuButtonRendererContainer;
+}
+
 export interface InformationButton {
 	buttonRenderer: InformationButtonButtonRenderer;
 }
@@ -717,6 +739,11 @@ export interface YTLiveChatPollChoice {
 
 	/** not available in showLiveChatActionPanelAction event */
 	votePercentage?: YTSimpleTextContainer; // 73%
+}
+
+export interface YTLiveChatPollBannerChoice {
+	pollOptionId: number; // 0
+	text: YTText;
 }
 
 export enum YTLiveChatPollType {

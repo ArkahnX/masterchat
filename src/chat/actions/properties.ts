@@ -10,6 +10,8 @@ export const chatItemProperties = [
 	"timestampText",
 	"trackingParams",
 	"authorBadges",
+	"creatorHeart",
+	"isReactionMessage",
 ];
 
 export const superChatItemProperties = [
@@ -38,7 +40,7 @@ export const superChatItemProperties = [
 	"lowerBumper",
 	"buyButton",
 	"pdgPurchasedNoveltyLoggingDirectives",
-	"isV2Style"
+	"isV2Style",
 ];
 
 export const superStickerItemProperties = [
@@ -64,6 +66,7 @@ export const superStickerItemProperties = [
 	"headerOverlayImage",
 	"lowerBumper",
 	"isV2Style",
+	"pdgPurchasedNoveltyLoggingDirectives",
 ];
 
 export const membershipMilestoneItemProperties = [
@@ -129,6 +132,8 @@ export const membershipGiftPurchaseTickerHeaderProperties = [
 export const updatePollProperties = ["choices", "liveChatPollId", "header", "trackingParams"];
 
 export const updatePollHeaderProperties = ["pollQuestion", "thumbnail", "metadataText", "liveChatPollType", "contextMenuButton"];
+
+export const bannerPollProperties = ["pollQuestion", "authorPhoto", "pollChoices", "collapsedStateEntityKey", "liveChatPollStateEntityKey"];
 
 export const superChatTickerProperties = [
 	"id",

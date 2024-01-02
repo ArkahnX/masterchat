@@ -160,6 +160,7 @@ export enum exportActionTypes {
 	updateLiveChatPollAction,
 	closeLiveChatActionPanelAction,
 	liveChatReportModerationStateCommand,
+	addPollBannerAction,
 }
 
 export interface ReplaceChatItemAction {

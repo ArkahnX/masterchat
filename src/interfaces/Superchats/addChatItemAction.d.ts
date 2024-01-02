@@ -4,12 +4,12 @@ import { AuthorBadges, Emote } from "./common";
 
 export interface AddChatItemAction {
 	type: exportActionTypes.addChatItemAction;
-	message: string|null;
+	message: string | null;
 	emotes?: Emote[];
 	authorName: string;
 	authorPhoto: string;
 	authorChannelId: string;
-	color:ColorName.chat,
+	color: ColorName.chat;
 	// contextMenuEndpoint:      ContextMenuEndpoint;
 	id: string;
 	timestamp: number;
@@ -17,4 +17,6 @@ export interface AddChatItemAction {
 	timestampText?: number;
 	// trackingParams?:          string;
 	authorBadges?: AuthorBadges;
+	creatorHeart?: string;
+	isReactionMessage?: boolean;
 }

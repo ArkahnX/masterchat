@@ -110,6 +110,7 @@ export function parseLiveChatTextMessageRenderer(renderer: YTLiveChatTextMessage
 
 	const authorBadges = parseBadges(renderer);
 	const emotes = getEmojis(renderer.message.runs);
+	const creatorHeart = "creatorHeart" in renderer && renderer.creatorHeart ? pickThumbUrl(renderer.creatorHeart) : undefined;
 
 	const unexpectedProperties = findUnexpectedProperties(chatItemProperties, renderer);
 	const unexpectedKeys = [...Object.keys(unexpectedProperties)];
@@ -139,6 +140,7 @@ export function parseLiveChatTextMessageRenderer(renderer: YTLiveChatTextMessage
 		color: ColorName.chat,
 		message,
 		emotes,
+		creatorHeart,
 		...unexpectedProperties,
 		// membership,
 		// isVerified,
@@ -551,7 +553,8 @@ export function parseLiveChatSponsorshipsGiftPurchaseAnnouncementRenderer(
 	const membership = parseMembership(header.authorBadges?.[header.authorBadges?.length - 1]);
 
 	if (!membership) {
-		debugLog("[action required] empty membership (gift purchase)", JSON.stringify(renderer));
+		// you can send a gift membership without being a member
+		// debugLog("[action required] empty membership (gift purchase)", JSON.stringify(renderer));
 	}
 
 	if (!timestampUsec || !timestamp) {

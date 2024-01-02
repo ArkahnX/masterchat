@@ -1,11 +1,13 @@
 import { unknown } from "..";
 import { ColorName } from "../../interfaces";
 import { AddBannerAction, AddIncomingRaidBannerAction, AddOutgoingRaidBannerAction } from "../../interfaces/Superchats/actions";
+import { addPollBannerAction } from "../../interfaces/Superchats/addPollBannerAction";
 import { ItemActionTypes, AddProductBannerAction, exportActionTypes } from "../../interfaces/actions";
 import { YTAddBannerToLiveChatCommand } from "../../interfaces/yt/chat";
 import { debugLog, endpointToUrl, getEmojis, stringify, tsTextToSeconds, tsToNumber } from "../../utils";
 import { parseBadges } from "../badge";
-import { BackupTimestamp, pickThumbUrl } from "../utils";
+import { BackupTimestamp, findUnexpectedProperties, pickThumbUrl } from "../utils";
+import { bannerPollProperties } from "./properties";
 
 export function parseAddBannerToLiveChatCommand(payload: YTAddBannerToLiveChatCommand, backupTimestamp: BackupTimestamp) {
 	// add pinned item
@@ -13,16 +15,16 @@ export function parseAddBannerToLiveChatCommand(payload: YTAddBannerToLiveChatCo
 	if (bannerRdr.header && bannerRdr.header.liveChatBannerHeaderRenderer.icon.iconType !== "KEEP") {
 		debugLog("[action required] Unknown icon type (addBannerToLiveChatCommand)", JSON.stringify(bannerRdr.header));
 	}
-	
+
 	// banner
 	const actionId = bannerRdr.actionId;
 	const targetId = bannerRdr.targetId;
 	const viewerIsCreator = bannerRdr.viewerIsCreator;
 	const isStackable = bannerRdr.isStackable;
-	
+
 	// contents
 	const contents = bannerRdr.contents;
-	
+
 	if ("liveChatTextMessageRenderer" in contents) {
 		const renderer = contents.liveChatTextMessageRenderer;
 		const id = renderer.id;
@@ -95,7 +97,7 @@ export function parseAddBannerToLiveChatCommand(payload: YTAddBannerToLiveChatCo
 				timestamp,
 				authorName,
 				authorPhoto,
-				color:ColorName.raid,
+				color: ColorName.raid,
 				videoId,
 				// ...bannerRdr
 				// actionId,
@@ -112,7 +114,7 @@ export function parseAddBannerToLiveChatCommand(payload: YTAddBannerToLiveChatCo
 				timestamp,
 				authorName,
 				authorPhoto,
-				color:ColorName.raid,
+				color: ColorName.raid,
 				// ...bannerRdr
 				// actionId,
 				// targetId,
@@ -156,6 +158,33 @@ export function parseAddBannerToLiveChatCommand(payload: YTAddBannerToLiveChatCo
 			viewerIsCreator,
 			isVerified,
 		};
+		return payload;
+	} else if ("liveChatBannerPollRenderer" in contents) {
+		const renderer = contents.liveChatBannerPollRenderer;
+
+		const choices: string[] = [];
+		const timestamp = backupTimestamp.get();
+		for (const choice of renderer.pollChoices) {
+			choices.push(stringify(choice.text));
+		}
+
+		const unexpectedProperties = findUnexpectedProperties(bannerPollProperties, renderer);
+		const unexpectedKeys = Object.keys(unexpectedProperties);
+		if (unexpectedKeys.length > 0) {
+			console.log("Unexpected keys found in [bannerPollProperties]", unexpectedKeys);
+		}
+
+		const payload: addPollBannerAction = {
+			type: exportActionTypes.addPollBannerAction,
+			id: actionId,
+			timestamp,
+			authorPhoto: pickThumbUrl(renderer.authorPhoto),
+			color: ColorName.poll,
+			question: stringify(renderer.pollQuestion),
+			choices: choices,
+			...unexpectedProperties,
+		};
+
 		return payload;
 	} else if ("liveChatCallForQuestionsRenderer" in contents) {
 		debugLog("[TODO, action required] implement liveChatCallForQuestionsRenderer in parseAddBannerToLiveChatCommand");
