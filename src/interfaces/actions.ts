@@ -67,6 +67,8 @@ export type UsefulActions =
 	| MembershipGiftPurchaseAction
 	| MembershipGiftRedemptionAction;
 
+export type PollActions = UpdatePollAction | AddPollResultAction;
+
 export type DebugActions =
 	| ModerationMessageAction
 	| MarkChatItemAsDeletedAction
@@ -156,8 +158,11 @@ export enum exportActionTypes {
 	addBannerToLiveChatCommand,
 	removeBannerForLiveChatCommand,
 	showLiveChatTooltipCommand,
+	/** @deprecated */
 	showLiveChatActionPanelAction,
+	/** @deprecated */
 	updateLiveChatPollAction,
+	/** @deprecated */
 	closeLiveChatActionPanelAction,
 	liveChatReportModerationStateCommand,
 	addPollBannerAction,
