@@ -41,6 +41,7 @@ export const superChatItemProperties = [
 	"buyButton",
 	"pdgPurchasedNoveltyLoggingDirectives",
 	"isV2Style",
+	"pdgLikeButton",
 ];
 
 export const superStickerItemProperties = [
@@ -148,6 +149,8 @@ export const superChatTickerProperties = [
 	"authorExternalChannelId",
 	"fullDurationSec",
 	"trackingParams",
+	"dynamicStateData",
+	"animationOrigin",
 ];
 
 export const superStickerTickerProperties = [
