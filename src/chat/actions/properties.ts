@@ -12,6 +12,7 @@ export const chatItemProperties = [
 	"authorBadges",
 	"creatorHeart",
 	"isReactionMessage",
+	"beforeContentButtons",
 ];
 
 export const superChatItemProperties = [
@@ -42,6 +43,7 @@ export const superChatItemProperties = [
 	"pdgPurchasedNoveltyLoggingDirectives",
 	"isV2Style",
 	"pdgLikeButton",
+	"replyButton",
 ];
 
 export const superStickerItemProperties = [
@@ -151,6 +153,7 @@ export const superChatTickerProperties = [
 	"trackingParams",
 	"dynamicStateData",
 	"animationOrigin",
+	"openEngagementPanelCommand",
 ];
 
 export const superStickerTickerProperties = [
