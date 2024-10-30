@@ -709,12 +709,20 @@ export class Masterchat extends EventEmitter {
 
 			const { continuationContents } = payload;
 			let emojiFountainData;
+			let creatorGoalData;
 			try {
 				emojiFountainData = payload.frameworkUpdates?.entityBatchUpdate.mutations
 					.map((mutation) => mutation.payload?.emojiFountainDataEntity)
 					.find(Boolean);
 			} catch (e) {
 				console.error("Catching missing emojiFountainData", JSON.stringify(payload?.frameworkUpdates?.entityBatchUpdate ?? {}), e);
+			}
+			try {
+				creatorGoalData = payload.frameworkUpdates?.entityBatchUpdate.mutations
+					.map((mutation) => mutation.payload?.creatorGoalEntity)
+					.find(Boolean);
+			} catch (e) {
+				console.error("Catching missing creatorGoalEntity", JSON.stringify(payload?.frameworkUpdates?.entityBatchUpdate ?? {}), e);
 			}
 
 			if (!continuationContents) {
@@ -771,6 +779,7 @@ export class Masterchat extends EventEmitter {
 					actions: [],
 					continuation: newContinuation,
 					emojiFountainData: emojiFountainData,
+					creatorGoalData: creatorGoalData,
 					error: null,
 				};
 			}
@@ -798,6 +807,7 @@ export class Masterchat extends EventEmitter {
 				actions,
 				continuation: newContinuation,
 				emojiFountainData: emojiFountainData,
+				creatorGoalData: creatorGoalData,
 				error: null,
 			};
 

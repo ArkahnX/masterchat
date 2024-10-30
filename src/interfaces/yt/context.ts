@@ -1,4 +1,7 @@
 import {
+	BumperUserEduContentViewModelImage,
+	CreatorThumbnail,
+	LoggingDirectives,
 	UIActions,
 	YTApiEndpointMetadataContainer,
 	YTClientMessages,
@@ -1158,6 +1161,7 @@ export interface EntityMutation {
 export interface EntityMutationPayload {
 	emojiFountainDataEntity?: EmojiFountainDataEntity;
 	booleanEntity?: BooleanEntity;
+	creatorGoalEntity?: CreatorGoalEntity;
 }
 
 export interface EmojiFountainDataEntity {
@@ -1185,6 +1189,66 @@ export interface BucketDuration {
 export interface BooleanEntity {
 	key: string;
 	value: boolean;
+}
+
+export interface CreatorGoalEntity {
+	key: string;
+	creatorGoalState: string;
+	currentGoalCount: string;
+	totalGoalCount: string;
+	endTimestampMs: string;
+	serverTimestampMs: string;
+	authorPhoto: YTThumbnailList;
+	superChatTierImage: YTThumbnailList;
+	goalDescription: YTText;
+	goalIcon: BumperUserEduContentViewModelImage;
+	goalTargetText: YTText;
+	goalHeadlineText: YTText;
+	goalSubheaderText: YTText;
+	isCreator: boolean;
+	progressFlowButton: ProgressFlowButton;
+	progressBarColor: number;
+	themedTargetImage: ThemedTargetImage;
+	goalHeaderBackgroundImage: YTThumbnailList;
+}
+
+export interface ProgressFlowButton {
+	buttonViewModel: ButtonViewModel;
+}
+
+export interface ButtonViewModel {
+	onTap: OnTap;
+	style: string;
+	trackingParams: string;
+	type: string;
+	titleFormatted: YTText;
+	loggingDirectives: LoggingDirectives;
+}
+
+export interface OnTap {
+	innertubeCommand: InnertubeCommand;
+}
+
+export interface InnertubeCommand {
+	clickTrackingParams: string;
+	hideEngagementPanelEndpoint: HideEngagementPanelEndpoint;
+}
+
+export interface HideEngagementPanelEndpoint {
+	identifier: Identifier;
+}
+
+export interface Identifier {
+	tag: string;
+}
+
+export interface ThemedTargetImage {
+	themedImageViewModel: ThemedImageViewModel;
+}
+
+export interface ThemedImageViewModel {
+	imageLight: CreatorThumbnail;
+	imageDark: CreatorThumbnail;
 }
 
 export interface OnResponseReceivedEndpoint {
