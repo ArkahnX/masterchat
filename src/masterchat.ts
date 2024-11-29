@@ -19,6 +19,7 @@ import {
 	UnavailableError,
 } from "./errors";
 import { ChatResponse, Credentials, RenderingPriority, YTCommentThreadRenderer, YTContinuationItem } from "./interfaces";
+export { ChatResponse } from "./interfaces";
 import { Action, ItemActionTypes, AddChatItemAction, MarkChatItemAsDeletedAction } from "./interfaces/actions";
 import { ActionCatalog, ActionInfo } from "./interfaces/contextActions";
 import { TranscriptSegment } from "./interfaces/transcript";
@@ -80,6 +81,8 @@ export interface Events {
 	end: (reason: EndReason) => void;
 	error: (error: MasterchatError | Error) => void;
 }
+
+
 
 export interface Masterchat {
 	on<U extends keyof Events>(event: U, listener: Events[U]): this;
