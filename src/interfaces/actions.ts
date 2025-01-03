@@ -14,6 +14,7 @@ import {
 } from "./Superchats/actions";
 import { AddPlaceholderItemAction } from "./Superchats/addPlaceholderItemAction";
 import { AddViewerEngagementMessageAction } from "./Superchats/addViewerEngagementMessageAction";
+import { CreatorGoalAction } from "./Superchats/creatorGoalAction";
 import { ColorName } from "./misc";
 import { YTLiveChatPollChoice, YTLiveChatPollType, YTRun, YTSimpleTextContainer, YTText } from "./yt/chat";
 
@@ -51,7 +52,8 @@ export type Action =
 	| RemoveChatItemAction
 	| RemoveChatItemByAuthorAction
 	| UnknownAction
-	| ParserError;
+	| ParserError
+	| CreatorGoalAction;
 
 export type UsefulActions =
 	| AddChatItemAction
@@ -166,6 +168,7 @@ export enum exportActionTypes {
 	closeLiveChatActionPanelAction,
 	liveChatReportModerationStateCommand,
 	addPollBannerAction,
+	creatorGoalAction,
 }
 
 export interface ReplaceChatItemAction {

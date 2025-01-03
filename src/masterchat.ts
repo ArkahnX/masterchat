@@ -48,6 +48,7 @@ import {
 	unpinParams,
 } from "./protobuf";
 import { debugLog, delay, getTimedContinuation, stringify, toVideoId, unwrapReplayActions, usecToSeconds, withContext } from "./utils";
+import { parseCreatorGoalAction } from "./chat/actions/creatorGoalAction";
 
 export type RetryOptions = {
 	retry?: number;
@@ -722,7 +723,7 @@ export class Masterchat extends EventEmitter {
 			}
 			try {
 				creatorGoalData = payload.frameworkUpdates?.entityBatchUpdate.mutations
-					.map((mutation) => mutation.payload?.creatorGoalEntity)
+					.map((mutation) => parseCreatorGoalAction(mutation.payload?.creatorGoalEntity))
 					.find(Boolean);
 			} catch (e) {
 				console.error("Catching missing creatorGoalEntity", JSON.stringify(payload?.frameworkUpdates?.entityBatchUpdate ?? {}), e);

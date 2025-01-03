@@ -26,6 +26,7 @@ export enum ColorName {
 	chat = "chat",
 	poll = "poll",
 	raid = "raid",
+	goal = "goal",
 }
 
 export const SUPERCHAT_COLOR_MAP = {

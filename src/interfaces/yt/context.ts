@@ -427,7 +427,7 @@ export interface SuperTitleLink {
 export interface SuperTitleLinkRun {
 	text: string;
 	navigationEndpoint?: PurpleNavigationEndpoint;
-	loggingDirectives?: any;
+	loggingDirectives?: LoggingDirectives;
 }
 
 export interface PurpleNavigationEndpoint {
@@ -1193,7 +1193,7 @@ export interface BooleanEntity {
 
 export interface CreatorGoalEntity {
 	key: string;
-	creatorGoalState: string;
+	creatorGoalState: "CREATOR_GOAL_STATE_ACTIVE" | "";
 	currentGoalCount: string;
 	totalGoalCount: string;
 	endTimestampMs: string;
@@ -1204,12 +1204,12 @@ export interface CreatorGoalEntity {
 	goalIcon: BumperUserEduContentViewModelImage;
 	goalTargetText: YTText;
 	goalHeadlineText: YTText;
-	goalSubheaderText: YTText;
+	goalSubheaderText?: YTText;
 	isCreator: boolean;
 	progressFlowButton: ProgressFlowButton;
 	progressBarColor: number;
 	themedTargetImage: ThemedTargetImage;
-	goalHeaderBackgroundImage: YTThumbnailList;
+	goalHeaderBackgroundImage?: YTThumbnailList;
 }
 
 export interface ProgressFlowButton {

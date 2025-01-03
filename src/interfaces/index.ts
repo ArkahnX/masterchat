@@ -1,6 +1,7 @@
 import { Action } from "./actions";
 import { TimedContinuation } from "./misc";
-import { CreatorGoalEntity, EmojiFountainDataEntity } from "./yt/context";
+import { CreatorGoalAction } from "./Superchats/creatorGoalAction";
+import { EmojiFountainDataEntity } from "./yt/context";
 
 export * from "./actions";
 export * from "./context";
@@ -21,7 +22,7 @@ export interface ChatResponse {
 	actions: Action[];
 	continuation: TimedContinuation | undefined;
 	emojiFountainData?: EmojiFountainDataEntity;
-	creatorGoalData?: CreatorGoalEntity;
+	creatorGoalData?: CreatorGoalAction;
 	error: null;
 }
 
