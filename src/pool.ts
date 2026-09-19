@@ -35,7 +35,7 @@ export class StreamPool extends EventEmitter {
 	}
 
 	public async forEach(fn: (agent: Masterchat, videoId: string, index: number) => void) {
-		return Promise.allSettled(this.entries.map(([videoId, instance], i) => Promise.resolve(fn(instance, videoId, i))));
+		return Promise.allSettled(this.entries.map(([videoId, instance]: any, i) => Promise.resolve(fn(instance, videoId, i))));
 	}
 
 	public setCredentials(credentials?: Credentials | string) {

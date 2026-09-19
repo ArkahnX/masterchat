@@ -3,6 +3,7 @@ import {
 	CreatorThumbnail,
 	LoggingDirectives,
 	UIActions,
+	YTAnyText,
 	YTApiEndpointMetadataContainer,
 	YTClientMessages,
 	YTIcon,
@@ -26,9 +27,12 @@ export interface YTPlayabilityStatus {
 	contextParams: string;
 	// if not OK
 	reason?: string;
+	messages?: string[];
 	errorScreen?: {
 		playerErrorMessageRenderer?: {
 			reason: YTSimpleTextContainer;
+			subreason?: YTAnyText;
+			proceedButton?: YTDismissButtonClass;
 			thumbnail: YTThumbnailList;
 			icon: YTIcon;
 		};
@@ -162,6 +166,7 @@ export interface YTPurpleWebCommandMetadata {
 	url: string;
 	webPageType: YTWebPageType;
 	rootVe: number;
+	apiUrl: string;
 }
 
 export interface YTAutoplayVideoWatchEndpoint {
@@ -222,7 +227,7 @@ export interface YTCollapseButtonButtonRenderer {
 	isDisabled: boolean;
 	accessibility?: YTAccessibilityLabel;
 	trackingParams: string;
-	text?: YTRunContainer;
+	text?: YTAnyText;
 }
 
 export interface YTAccessibilityData {
@@ -468,18 +473,8 @@ export interface VideoActionsMenuRenderer {
 }
 
 export interface TopLevelButton {
-	segmentedLikeDislikeButtonRenderer?: SegmentedLikeDislikeButtonRenderer;
 	toggleButtonRenderer?: TopLevelButtonToggleButtonRenderer;
 	buttonRenderer?: TopLevelButtonButtonRenderer;
-}
-
-export interface SegmentedLikeDislikeButtonRenderer {
-	likeButton: YTLikeButton;
-	dislikeButton: YTLikeButton;
-}
-
-export interface YTLikeButton {
-	toggleButtonRenderer: TopLevelButtonToggleButtonRenderer;
 }
 
 export interface TopLevelButtonButtonRenderer {
@@ -741,7 +736,7 @@ export interface VideoOwnerRenderer {
 	thumbnail: Background;
 	title: Byline;
 	navigationEndpoint: VideoOwnerRendererNavigationEndpoint;
-	subscriberCountText: YTText;
+	subscriberCountText: YTRunContainer;
 	trackingParams: string;
 	badges: MetadataBadgeRendererContainer[];
 	membershipButton: MembershipButton;
@@ -820,12 +815,80 @@ export interface IndecentNavigationEndpoint {
 export interface VideoOwnerRendererNavigationEndpoint {
 	clickTrackingParams: string;
 	commandMetadata: YTAutoplayVideoCommandMetadata;
-	browseEndpoint: FluffyBrowseEndpoint;
+	browseEndpoint?: FluffyBrowseEndpoint;
+	showDialogCommand?: ShowDialogCommand;
 }
 
 export interface FluffyBrowseEndpoint {
 	browseId: string;
 	canonicalBaseUrl: string;
+}
+
+export interface ShowDialogCommand {
+	panelLoadingStrategy: PanelLoadingStrategy;
+}
+
+export interface PanelLoadingStrategy {
+	inlineContent: InlineContent;
+	screenVe: number;
+}
+
+export interface InlineContent {
+	dialogViewModel: DialogViewModel;
+}
+
+export interface DialogViewModel {
+	header: Header;
+	customContent: CustomContent;
+}
+
+export interface Header {
+	dialogHeaderViewModel: DialogHeaderViewModel;
+}
+
+export interface DialogHeaderViewModel {
+	headline: Headline;
+}
+
+export interface Headline {
+	content: string;
+}
+
+export interface CustomContent {
+	listViewModel: ListViewModel;
+}
+
+export interface ListViewModel {
+	listItems: ListItem[];
+}
+
+export interface ListItem {
+	listItemViewModel: ListItemViewModel;
+}
+
+export interface ListItemViewModel {
+	title: ListItemViewModelTitle;
+}
+
+export interface ListItemViewModelTitle {
+	content: string;
+	commandRuns: CommandRun[];
+}
+
+export interface CommandRun {
+	startIndex: number;
+	length: number;
+	onTap: OnTap;
+}
+
+export interface OnTap {
+	innertubeCommand?: InnertubeCommand;
+}
+
+export interface InnertubeCommand {
+	clickTrackingParams: string;
+	webCommandMetadata: YTPurpleWebCommandMetadata;
+	browseEndpoint: FluffyBrowseEndpoint;
 }
 
 export interface Byline {

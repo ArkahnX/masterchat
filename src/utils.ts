@@ -2,16 +2,7 @@ import debug from "debug";
 import { DC, DO } from "./constants";
 import { AbortError } from "./errors";
 import { Color, TimedContinuation } from "./interfaces/misc";
-import {
-	YTAction,
-	YTContinuationContents,
-	YTEmoji,
-	YTEmojiRun,
-	YTRun,
-	YTSimpleTextContainer,
-	YTText,
-	YTTextRun,
-} from "./interfaces/yt/chat";
+import { YTAction, YTContinuationContents, YTEmojiRun, YTRun, YTSimpleTextContainer, YTText, YTTextRun } from "./interfaces/yt/chat";
 import { FluffyBrowseEndpoint } from "./interfaces/yt/context";
 import { Emote } from "./interfaces/Superchats/common";
 import { pickThumbUrl } from "./chat/utils";
@@ -168,11 +159,8 @@ export function emojiRunToPlainText(run: YTEmojiRun): string {
       },
     },
    */
-	if ("shortcuts" in emoji) {
-		return emoji.shortcuts[0];
-	} else {
-		return `:${(emoji as YTEmoji).emojiId}:`;
-	}
+	const term = emoji.isCustomEmoji || emoji.emojiId === "" ? emoji.shortcuts[emoji.shortcuts.length - 1] : emoji.emojiId;
+	return term;
 }
 
 export function getEmojis(runs?: YTRun[]) {
@@ -241,7 +229,7 @@ export function simpleTextToString(payload: YTSimpleTextContainer, expand: boole
 
 export function runsToString(
 	runs: YTRun[],
-	{ spaces = false, textHandler = textRunToPlainText, emojiHandler = emojiRunToPlainText }: RunsToStringOptions = {}
+	{ spaces = false, textHandler = textRunToPlainText, emojiHandler = emojiRunToPlainText }: RunsToStringOptions = {},
 ): string {
 	return runs
 		.map((run) => {
@@ -278,30 +266,34 @@ export function guessFreeChat(title: string) {
 }
 
 export function groupBy<T, K extends keyof T, S extends Extract<T[K], string>>(lst: T[], key: K) {
-	return lst.reduce((result, o) => {
-		const index = o[key] as S;
-		if (!result[index]) result[index] = [];
-		result[index].push(o as any);
-		return result;
-	}, {} as { [k in S]: (T extends { [s in K]: k } ? T : never)[] });
+	return lst.reduce(
+		(result, o) => {
+			const index = o[key] as S;
+			if (!result[index]) result[index] = [];
+			result[index].push(o as any);
+			return result;
+		},
+		{} as { [k in S]: (T extends { [s in K]: k } ? T : never)[] },
+	);
 }
 
-export function withContext(input: any = {}) {
+export function withContext(input: Record<string, any> = {}, config?: { clientVersion?: string }) {
+	const client = DC;
+	client.clientVersion = config?.clientVersion || client.clientVersion;
 	return {
 		...input,
 		context: {
 			...input?.context,
-			client: DC,
+			client,
 		},
 	};
 }
 
 export function durationToSeconds(durationText: string): number {
 	const match = /^(a|\d+)\s(year|month|week|day|hour|minute|second)s?$/.exec(durationText);
-
-	// throwing an error here will cause it to bubble all the way up.
-	// if (!match) throw new Error(`Invalid duration: ${durationText}`);
-	if (!match) return -1;
+	if (!match) {
+		throw new Error(`Invalid duration: ${durationText}`);
+	}
 
 	const [_, duration, unit] = match;
 	const durationInt = parseInt(duration) || 1;
@@ -352,7 +344,7 @@ export function unwrapReplayActions(rawActions: YTAction[]) {
 			const replayAction = Object.values(omitTrackingParams(action))[0] as any;
 
 			return replayAction.actions[0];
-		}
+		},
 	);
 }
 
@@ -382,8 +374,8 @@ export type OmitTrackingParams<T> = Omit<T, "clickTrackingParams" | "trackingPar
 /**
  * Remove `clickTrackingParams` and `trackingParams` from object
  */
-export function omitTrackingParams<T extends { [s: string]: any }>(obj: T): OmitTrackingParams<T> {
-	return Object.fromEntries(
-		Object.entries(obj).filter(([k]) => k !== "clickTrackingParams" && k !== "trackingParams")
-	) as OmitTrackingParams<T>;
+export function omitTrackingParams<T>(obj: T): OmitTrackingParams<T> {
+	return Object.entries(obj)
+		.filter(([k]) => k !== "clickTrackingParams" && k !== "trackingParams")
+		.reduce((sum, [k, v]) => ((sum[k as keyof OmitTrackingParams<T>] = v), sum), {} as OmitTrackingParams<T>);
 }

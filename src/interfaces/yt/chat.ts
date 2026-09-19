@@ -1,10 +1,10 @@
 import {
-	YTAccessibilityLabel,
+	FrameworkUpdates,
 	YTAccessibilityData,
+	YTAccessibilityLabel,
+	YTBrowseEndpointContainer,
 	YTReloadContinuation,
 	YTResponseContext,
-	YTBrowseEndpointContainer,
-	FrameworkUpdates,
 } from "./context";
 
 // --------------------
@@ -12,6 +12,13 @@ import {
 // --------------------
 
 export type YTText = YTSimpleTextContainer | YTRunContainer;
+
+/**
+ * Actually same {@link YTText} but better for IntelliSense (?)
+ *
+ * It can have `simpleText` or `runs` not both
+ */
+export type YTAnyText = Partial<YTSimpleTextContainer & YTRunContainer>;
 
 export interface YTSimpleTextContainer {
 	simpleText: string;
@@ -28,7 +35,13 @@ export interface YTTextRun {
 	text: string;
 	bold?: boolean;
 	italics?: boolean;
+	fontFace?: YTFontFace | string;
 	navigationEndpoint?: YTUrlEndpointContainer | YTBrowseEndpointContainer | YTWatchEndpointContainer;
+}
+
+export enum YTFontFace {
+	RobotoRegular = "FONT_FACE_ROBOTO_REGULAR",
+	RobotoMedium = "FONT_FACE_ROBOTO_MEDIUM",
 }
 
 export interface YTEmojiRun {
@@ -134,6 +147,7 @@ export interface YTLiveChatContinuation {
 	trackingParams?: string;
 	participantsList?: YTParticipantsList;
 	popoutMessage?: YTPopoutMessage;
+	emojis?: YTEmoji[];
 	clientMessages?: YTClientMessages;
 }
 
@@ -248,11 +262,7 @@ export interface YTAction {
 	showLiveChatActionPanelAction?: YTShowLiveChatActionPanelAction;
 	updateLiveChatPollAction?: YTUpdateLiveChatPollAction;
 	closeLiveChatActionPanelAction?: YTCloseLiveChatActionPanelAction;
-	liveChatReportModerationStateCommand: YTLiveChatReportModerationStateCommand;
 }
-
-// eslint-disable-next-line @typescript-eslint/no-empty-interface
-export interface YTLiveChatReportModerationStateCommand {}
 
 export interface YTAddChatItemAction {
 	item: YTAddChatItemActionItem;
@@ -390,6 +400,14 @@ export interface YTLiveChatProductItemRendererContainer {
 	liveChatProductItemRenderer: YTLiveChatProductItemRenderer;
 }
 
+export interface YTLiveChatCallForQuestionsRendererContainer {
+	liveChatCallForQuestionsRenderer: YTLiveChatCallForQuestionsRenderer;
+}
+
+export interface YTLiveChatBannerChatSummaryRendererContainer {
+	liveChatBannerChatSummaryRenderer: YTLiveChatBannerChatSummaryRenderer;
+}
+
 export interface YTLiveChatBannerPollRendererContainter {
 	liveChatBannerPollRenderer: YTLiveChatBannerPollRenderer;
 }
@@ -424,7 +442,6 @@ export interface YTLiveChatPaidMessageRenderer {
 	authorExternalChannelId: string;
 	contextMenuEndpoint: YTLiveChatItemContextMenuEndpointContainer;
 	contextMenuAccessibility: YTAccessibilityData;
-
 	authorBadges?: YTAuthorBadge[];
 
 	purchaseAmountText: YTSimpleTextContainer;
@@ -434,6 +451,7 @@ export interface YTLiveChatPaidMessageRenderer {
 	headerTextColor: number;
 	bodyBackgroundColor: number;
 	bodyTextColor: number;
+	textInputBackgroundColor: number;
 	trackingParams: string;
 	creatorHeartButton?: CreatorHeartButton;
 	headerOverlayImage?: YTThumbnailList;
@@ -589,9 +607,9 @@ export interface YTLiveChatMembershipItemRenderer {
 	headerSubtext: YTText;
 	message?: YTRunContainer; // milestone with message
 	empty?: true; // milestone without message
-	authorName: YTText;
+	authorName?: YTText;
 	authorPhoto: YTThumbnailList;
-	authorBadges?: YTAuthorBadge[];
+	authorBadges: YTLiveChatAuthorBadgeRendererContainer[];
 	contextMenuEndpoint: YTLiveChatItemContextMenuEndpointContainer;
 	contextMenuAccessibility: YTAccessibilityData;
 }
@@ -608,25 +626,49 @@ export interface YTLiveChatBannerRenderer {
 		| YTLiveChatTextMessageRendererContainer
 		| YTLiveChatBannerRedirectRendererContainer
 		| YTLiveChatProductItemRendererContainer
+		| YTLiveChatCallForQuestionsRendererContainer
+		| YTLiveChatBannerChatSummaryRendererContainer
 		| YTLiveChatBannerPollRendererContainter;
 	viewerIsCreator: boolean;
 	header?: YTLiveChatBannerRendererHeader;
 	isStackable?: boolean;
 	backgroundType?: "LIVE_CHAT_BANNER_BACKGROUND_TYPE_STATIC" | string;
+	bannerType: YTLiveChatBannerType | string;
+	onCollapseCommand?: YTElementsCommandContainer;
+	onExpandCommand?: YTElementsCommandContainer;
+}
+
+export enum YTLiveChatBannerType {
+	ChatSummary = "LIVE_CHAT_BANNER_TYPE_CHAT_SUMMARY",
+	CallForQuestions = "LIVE_CHAT_BANNER_TYPE_QNA_START",
+	CrossChannelRedirect = "LIVE_CHAT_BANNER_TYPE_CROSS_CHANNEL_REDIRECT",
+}
+
+export interface YTElementsCommandContainer {
+	clickTrackingParams: string;
+	elementsCommand: YTSetEntityCommandContainer;
+}
+
+export interface YTSetEntityCommandContainer {
+	setEntityCommand: {
+		identifier: string;
+		entity: string;
+	};
 }
 
 export interface YTLiveChatViewerEngagementMessageRenderer {
 	id: string;
 	timestampUsec?: string;
-	icon: YTIcon;
+	icon?: YTIcon;
 	message: YTText;
 	actionButton?: YTActionButtonRendererContainer;
 	contextMenuEndpoint?: YTLiveChatItemContextMenuEndpointContainer;
+	trackingParams?: string;
 }
 
 export interface YTTooltipRenderer {
 	// TODO: type promoConfig
-	promoConfig: unknown;
+	promoConfig: any;
 	targetId: string;
 	detailsText: YTText;
 	suggestedPosition: YTType;
@@ -644,7 +686,7 @@ export interface YTLiveChatPollRenderer {
 	liveChatPollId: string;
 	header: {
 		pollHeaderRenderer: {
-			pollQuestion?: YTSimpleTextContainer;
+			pollQuestion?: YTAnyText;
 			thumbnail: YTThumbnailList;
 			metadataText: YTRunContainer<YTTextRun>;
 			liveChatPollType: YTLiveChatPollType;
@@ -654,7 +696,7 @@ export interface YTLiveChatPollRenderer {
 }
 
 export interface YTLiveChatActionPanelRenderer {
-	contents: YTLiveChatPollRendererContainer | unknown;
+	contents: YTLiveChatPollRendererContainer | any;
 	id: string;
 	targetId: string;
 }
@@ -727,6 +769,22 @@ export interface LiveChatDialogRenderer {
 	trackingParams: string;
 	dialogMessages: YTSimpleTextContainer[];
 	confirmButton: CollapseButton;
+}
+
+export interface YTLiveChatCallForQuestionsRenderer {
+	creatorAvatar: YTThumbnailList;
+	featureLabel: YTSimpleTextContainer;
+	contentSeparator: YTSimpleTextContainer;
+	overflowMenuButton: YTContextMenuButtonRendererContainer;
+	creatorAuthorName: YTSimpleTextContainer;
+	questionMessage: YTRunContainer;
+}
+
+export interface YTLiveChatBannerChatSummaryRenderer {
+	liveChatSummaryId: string;
+	chatSummary: YTRunContainer;
+	icon: YTIcon;
+	trackingParams: string;
 }
 
 export interface YTLiveChatPollChoice {
@@ -806,10 +864,10 @@ export interface YTLiveChatSponsorshipsHeaderRenderer {
 			{ text: string; bold: true }, // text: "5"
 			{ text: " "; bold: true },
 			{ text: string; bold: true }, // text: "Miko Ch. さくらみこ"
-			{ text: " memberships"; bold: true }
+			{ text: " memberships"; bold: true },
 		];
 	};
-	authorBadges?: YTAuthorBadge[];
+	authorBadges?: YTLiveChatAuthorBadgeRendererContainer[];
 	contextMenuEndpoint: YTLiveChatItemContextMenuEndpointContainer;
 	contextMenuAccessibility: YTAccessibilityData;
 	image: YTThumbnailList; // https://www.gstatic.com/youtube/img/sponsorships/sponsorships_gift_purchase_announcement_artwork.png
@@ -823,13 +881,13 @@ export interface YTLiveChatSponsorshipsGiftRedemptionAnnouncementRenderer {
 	authorExternalChannelId: string;
 	authorName: YTSimpleTextContainer;
 	authorPhoto: YTThumbnailList;
-	authorBadges?: YTAuthorBadge[];
 	message: {
 		runs: [
 			{ text: "was gifted a membership by "; italics: true },
-			{ text: string; bold: true; italics: true } // text: "User"
+			{ text: string; bold: true; italics: true }, // text: "User"
 		];
 	};
+	authorBadges?: YTLiveChatAuthorBadgeRendererContainer[];
 	contextMenuEndpoint: YTLiveChatItemContextMenuEndpointContainer;
 	contextMenuAccessibility: YTAccessibilityData;
 	trackingParams: string;
@@ -846,7 +904,7 @@ export interface YTLiveChatModerationMessageRenderer {
 				italics: true;
 			},
 			{ text: string; bold: true; italics: true },
-			{ text: "."; italics: true }
+			{ text: "."; italics: true },
 		];
 	};
 	id: string;
@@ -1050,6 +1108,7 @@ export enum YTIconType {
 	TabSubscriptions = "TAB_SUBSCRIPTIONS",
 	BlockUser = "BLOCK_USER",
 	ErrorOutline = "ERROR_OUTLINE",
+	Spark = "SPARK",
 }
 
 export interface YTPicker {
@@ -1123,11 +1182,15 @@ export interface YTLiveChatBannerRendererHeader {
 
 export interface YTContextMenuButtonRendererContainer<Command = YTLiveChatItemContextMenuEndpointContainer> {
 	buttonRenderer: {
-		icon: YTIcon;
+		icon?: YTIcon;
 		style?: string;
-		command: Command;
-		accessibilityData: YTAccessibilityData;
+		size?: string;
+		isDisabled?: boolean;
+		text?: YTRunContainer<YTTextRun>;
 		trackingParams: string;
+		command: Command;
+		accessibility?: YTAccessibilityLabel;
+		accessibilityData?: YTAccessibilityData;
 	};
 }
 
@@ -1142,6 +1205,15 @@ export interface YTServiceButtonRenderer<Endpoint> {
 	trackingParams: string;
 }
 
+export interface YTButton {
+	icon?: YTIcon;
+	text?: YTText;
+	size?: string;
+	style?: string;
+	isDisabled?: boolean;
+	accessibility: YTAccessibilityLabel;
+}
+
 export interface YTIconButtonRenderer {
 	icon: YTIcon;
 	tooltip: string;
@@ -1149,7 +1221,7 @@ export interface YTIconButtonRenderer {
 	accessibility: YTAccessibilityData;
 }
 
-export interface YTNavigationButtonRenderer<Endpoint> extends YTButtonRenderer {
+export interface YTNavigationButtonRenderer<Endpoint> extends YTButton {
 	text: YTSimpleTextContainer;
 	navigationEndpoint: Endpoint;
 }
@@ -1272,7 +1344,7 @@ export interface YTParticipant {
 	liveChatParticipantRenderer: {
 		authorName: YTText;
 		authorPhoto: YTThumbnailList;
-		authorBadges: YTAuthorBadge[];
+		authorBadges: YTLiveChatAuthorBadgeRendererContainer[];
 	};
 }
 

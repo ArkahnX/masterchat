@@ -23,7 +23,7 @@ export function csc(videoId: string, { top = false, highlightedCommentId }: CscO
 				ld(8, "comments-section"),
 			]),
 		]),
-		B64Type.B1
+		B64Type.B1,
 	);
 }
 
@@ -34,7 +34,7 @@ export function liveReloadContinuation(origin: CVPair, { top = false }: { top?: 
 
 export function liveTimedContinuation(
 	origin: CVPair,
-	{ top = false, since = new Date() }: { top?: boolean; isOwner?: boolean; since?: Date } = {}
+	{ top = false, since = new Date() }: { top?: boolean; isOwner?: boolean; since?: Date } = {},
 ): string {
 	const chatType = top ? 4 : 1;
 	const t1 = Date.now() * 1000;
@@ -52,7 +52,7 @@ export function liveTimedContinuation(
 			vt(17, 0),
 			vt(20, t1),
 		]),
-		B64Type.B1
+		B64Type.B1,
 	);
 }
 
@@ -66,17 +66,14 @@ export function replayTimedContinuation(origin: CVPair, { top = false, seekMs = 
 	return b64e(
 		ld(156074452, [
 			ld(3, hdt(origin)),
-			vt(5, seekMs * 1000), // micro seconds
+			vt(5, seekMs),
 			vt(8, 0),
-			vt(9, 4), // TODO: find out the diff between 4 and 3
-			ld(10, [
-				vt(4, 0),
-				vt(22, 0), // recently added
-			]),
+			vt(9, 4), // 3
+			ld(10, vt(4, 0)),
 			ld(14, vt(1, chatType)),
 			vt(15, 0),
 		]),
-		B64Type.B1
+		B64Type.B1,
 	);
 }
 
@@ -88,8 +85,17 @@ export function removeMessageParams(chatId: string, origin: CVPair, retract: boo
 	return b64e(cc([ld(1, cvToken(origin)), ld(2, ld(1, chatToken(chatId))), vt(10, retract ? 1 : 2), vt(11, 1)]), B64Type.B2);
 }
 
-export function timeoutParams(channelId: string, origin: CVPair): string {
-	return b64e(cc([ld(1, cvToken(origin)), ld(6, ld(1, truc(channelId))), vt(10, 2), vt(11, 1)]), B64Type.B2);
+export function timeoutParams(channelId: string, origin: CVPair, timeoutLength: number): string {
+	return b64e(
+		cc([
+			ld(1, cvToken(origin)),
+			ld(6, [ld(1, truc(channelId)), ld(2, [vt(1, encv(BigInt(timeoutLength)))])]),
+			vt(10, 1),
+			vt(11, 1),
+			vt(14, 4),
+		]),
+		B64Type.B2,
+	);
 }
 
 export function hideParams(channelId: string, origin: CVPair, undo: boolean = false): string {
@@ -123,7 +129,7 @@ export function getTranscriptParams(videoId: string, language: string, autoGener
 			ld(5, "engagement-panel-searchable-transcript-search-panel"),
 			vt(6, 1),
 		]),
-		B64Type.B1
+		B64Type.B1,
 	);
 }
 

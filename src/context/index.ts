@@ -1,27 +1,41 @@
 import * as cheerio from "cheerio";
-import { MembersOnlyError, NoPermissionError, NoStreamRecordingError, UnavailableError } from "../errors";
-import { runsToString, stringify } from "../utils";
-import { YTInitialData, YTPlayabilityStatus, PurpleStyle, ResultsResults } from "../interfaces/yt/context";
-import { DC } from "../constants";
+import { BotError, MembersOnlyError, NoPermissionError, NoStreamRecordingError, UnavailableError } from "../errors";
+import { runsToString } from "../utils";
+import {
+	PurpleStyle,
+	VideoOwnerRenderer,
+	VideoPrimaryInfoRenderer,
+	VideoSecondaryInfoRenderer,
+	YTInitialData,
+	YTPlayabilityStatus,
+} from "../interfaces/yt/context";
+import { VideoObject } from "../interfaces/yt/metadata";
 
 // OK duration=">0" => Archived (replay chat may be available)
 // OK duration="0" => Live (chat may be available)
 // LIVE_STREAM_OFFLINE => Offline (chat may be available)
-function assertPlayability(playabilityStatus: YTPlayabilityStatus | undefined, html: string) {
+function assertPlayability(playabilityStatus: YTPlayabilityStatus | undefined, data?: any) {
 	if (!playabilityStatus) {
-		console.error("Watch HTML", html);
 		throw new Error("playabilityStatus missing");
 	}
+
+	const msg = playabilityStatus.reason || playabilityStatus.messages?.join(" ");
 	switch (playabilityStatus.status) {
 		case "ERROR":
-			throw new UnavailableError(playabilityStatus.reason!);
+			throw new UnavailableError(msg!);
 		case "LOGIN_REQUIRED":
-			throw new NoPermissionError(playabilityStatus.reason!);
+			if (
+				playabilityStatus.reason === "Sign in to confirm you’re not a bot" ||
+				playabilityStatus.skip?.playabilityErrorSkipConfig?.skipOnPlayabilityError === false
+			) {
+				throw new BotError(msg!);
+			}
+			throw new NoPermissionError(msg!);
 		case "UNPLAYABLE": {
 			if ("playerLegacyDesktopYpcOfferRenderer" in playabilityStatus.errorScreen!) {
-				throw new MembersOnlyError(playabilityStatus.reason!);
+				throw new MembersOnlyError(msg!, data);
 			}
-			throw new NoStreamRecordingError(playabilityStatus.reason!);
+			throw new NoStreamRecordingError(msg!);
 		}
 		case "LIVE_STREAM_OFFLINE":
 		case "OK":
@@ -29,7 +43,7 @@ function assertPlayability(playabilityStatus: YTPlayabilityStatus | undefined, h
 }
 
 export function findCfg(data: string) {
-	const match = /ytcfg\.set\s*\(\s*({.+?})\s*\)\s*;/.exec(data);
+	const match = /ytcfg\.set\(({.+?})\);/.exec(data);
 	if (!match) {
 		console.error(`No match found for "findCfg"`);
 		return;
@@ -38,7 +52,7 @@ export function findCfg(data: string) {
 }
 
 export function findIPR(data: string): unknown {
-	const match = /ytInitialPlayerResponse\s*=\s*({.+?})\s*;\s*(?:var\s+(?:meta|head)|<\/script|\n)/.exec(data);
+	const match = /var ytInitialPlayerResponse = (.+?);var meta/.exec(data);
 	if (!match) {
 		console.error(`No match found for "findIPR"`);
 		return;
@@ -46,19 +60,8 @@ export function findIPR(data: string): unknown {
 	return JSON.parse(match[1]);
 }
 
-function findClientVersion(data: string) {
-	const result = findCfg(data)?.INNERTUBE_CONTEXT_CLIENT_VERSION;
-	if (result && typeof result === "string") {
-		if (result !== DC.clientVersion) {
-			console.error(`current masterchat version ${DC.clientVersion} does not match live ${result}`);
-		}
-		DC.clientVersion = result;
-	}
-}
-
 export function findInitialData(data: string): YTInitialData | undefined {
-	const match =
-		/(?:window\s*\[\s*["']ytInitialData["']\s*\]|ytInitialData)\s*=\s*({.+?})\s*;\s*(?:var\s+(?:meta|head)|<\/script|\n)/.exec(data);
+	const match = /(?:window\s*\[\s*["']ytInitialData["']\s*\]|ytInitialData)\s*=\s*({.+?})\s*;\s*(?:var\s+(?:meta|head)|<\/script|\n)/.exec(data);
 	if (!match) {
 		console.error(`No match found for "findInitialData"`);
 		return;
@@ -66,31 +69,45 @@ export function findInitialData(data: string): YTInitialData | undefined {
 	return JSON.parse(match[1]);
 }
 
-function getVideoPrimaryInfoRenderer(results: ResultsResults) {
-	for (const entry of results.contents) {
-		if ("videoPrimaryInfoRenderer" in entry) {
-			return entry;
-		}
-	}
-	throw new Error(`Unable to find "videoPrimaryInfoRenderer" ${JSON.stringify(results)}`);
-}
-function getVideoSecondaryInfoRenderer(results: ResultsResults) {
-	for (const entry of results.contents) {
-		if ("videoSecondaryInfoRenderer" in entry) {
-			return entry;
-		}
-	}
-	throw new Error(`Unable to find "videoSecondaryInfoRenderer" ${JSON.stringify(results)}`);
-}
-
 export function findEPR(data: string) {
 	return findCfg(data)?.PLAYER_VARS?.embedded_player_response;
+}
+
+export function findChannelId(data?: VideoOwnerRenderer) {
+	const navigationEndpoint = data?.navigationEndpoint;
+	const browseEndpoint =
+		navigationEndpoint?.showDialogCommand?.panelLoadingStrategy?.inlineContent?.dialogViewModel?.customContent?.listViewModel
+			?.listItems?.[0]?.listItemViewModel?.title?.commandRuns?.[0]?.onTap?.innertubeCommand?.browseEndpoint ||
+		navigationEndpoint?.browseEndpoint;
+	const value = browseEndpoint?.browseId;
+	return value;
+}
+
+export function findChannelName(data?: VideoOwnerRenderer) {
+	const navigationEndpoint = data?.navigationEndpoint;
+	const value =
+		navigationEndpoint?.showDialogCommand?.panelLoadingStrategy?.inlineContent?.dialogViewModel?.customContent?.listViewModel
+			?.listItems?.[0]?.listItemViewModel?.title?.content || runsToString(data?.title?.runs || []);
+	return value;
 }
 
 export function findPlayabilityStatus(data: string): YTPlayabilityStatus | undefined {
 	const ipr = findIPR(data);
 	return (ipr as any)?.playabilityStatus;
 }
+
+export function parseIsUpcoming(data?: VideoPrimaryInfoRenderer): boolean {
+	const text = data?.dateText?.simpleText || "";
+	const value = text.includes("Scheduled for") || text.includes("Premieres");
+	return value;
+}
+
+export function parseIsMembersOnly(data?: VideoPrimaryInfoRenderer): boolean {
+	const badges = data?.badges || [];
+	const value = badges.some((v) => v.metadataBadgeRenderer.style === PurpleStyle.BadgeStyleTypeMembersOnly);
+	return value;
+}
+
 // embed disabled https://www.youtube.com/embed/JfJYHfrOGgQ
 // unavailable video https://www.youtube.com/embed/YEAINgb2xfo
 // private video https://www.youtube.com/embed/UUjdYGda4N4
@@ -103,7 +120,7 @@ export async function parseMetadataFromEmbed(html: string) {
 	if (!epr || !ps) {
 		console.error("missing epr or ps");
 	}
-	assertPlayability(ps, html);
+	assertPlayability(ps);
 
 	const ep = epr.embedPreview;
 
@@ -130,78 +147,68 @@ export async function parseMetadataFromEmbed(html: string) {
 	};
 }
 
-function getMembershipBadge(primaryInfo) {
-	if ("badges" in primaryInfo) {
-		for (const entry of primaryInfo.badges) {
-			if ("metadataBadgeRenderer" in entry && entry.metadataBadgeRenderer.style === "BADGE_STYLE_TYPE_MEMBERS_ONLY") {
-				return true;
-			}
-		}
-	}
-	return false;
-}
-function hasLiveChat(initialData) {
-	const conversationBar = initialData.contents?.twoColumnWatchNextResults?.conversationBar;
-	if (conversationBar && "liveChatRenderer" in conversationBar) {
-		return true;
-	}
-	return false;
-}
-
 export function parseMetadataFromWatch(html: string) {
-	findClientVersion(html);
+	const metadata = parseVideoMetadataFromHtml(html);
 	const initialData = findInitialData(html)!;
-
-	const playabilityStatus = findPlayabilityStatus(html);
-	assertPlayability(playabilityStatus, html);
 
 	// TODO: initialData.contents.twoColumnWatchNextResults.conversationBar.conversationBarRenderer.availabilityMessage.messageRenderer.text.runs[0].text === 'Chat is disabled for this live stream.'
 	const results = initialData.contents?.twoColumnWatchNextResults?.results.results!;
 
-	const primaryInfo = getVideoPrimaryInfoRenderer(results).videoPrimaryInfoRenderer;
-	const videoOwner = getVideoSecondaryInfoRenderer(results).videoSecondaryInfoRenderer.owner.videoOwnerRenderer;
-	const isMembership = getMembershipBadge(primaryInfo);
-	const hasChat = hasLiveChat(initialData);
+	const primaryInfo = results.contents?.find((v) => v.videoPrimaryInfoRenderer)?.videoPrimaryInfoRenderer;
+	const secondaryInfo = results.contents?.find((v) => v.videoSecondaryInfoRenderer)?.videoSecondaryInfoRenderer;
 
-	const title = runsToString(primaryInfo.title.runs);
-	const channelId = videoOwner.navigationEndpoint.browseEndpoint.browseId;
-	const channelName = runsToString(videoOwner.title.runs);
-	const metadata = parseVideoMetadataFromHtml(html);
-	let isLive = false;
-	if (isMembership && hasChat && "viewCount" in primaryInfo) {
-		isLive = true;
+	const videoOwner = secondaryInfo?.owner?.videoOwnerRenderer;
+
+	const channelId = findChannelId(videoOwner);
+	const channelName = findChannelName(videoOwner) || metadata.author?.name;
+	const title = runsToString(primaryInfo?.title?.runs || []) || metadata.name;
+	const isLive = !metadata.publication?.endDate || false;
+	const isUpcoming = parseIsUpcoming(primaryInfo);
+	const isMembersOnly = parseIsMembersOnly(primaryInfo);
+
+	if (!channelId) {
+		throw new Error("CHANNEL_ID_NOT_FOUND");
 	}
-	if (isMembership === false && hasChat && "viewCount" in primaryInfo) {
-		isLive = primaryInfo.viewCount?.videoViewCountRenderer.isLive ?? false;
-	}
-	const isMembersOnly =
-		primaryInfo.badges?.some?.((v) => v.metadataBadgeRenderer.style === PurpleStyle.BadgeStyleTypeMembersOnly) ?? false;
 
-	const viewCount = primaryInfo.viewCount?.videoViewCountRenderer.isLive
-		? Number(stringify(primaryInfo.viewCount?.videoViewCountRenderer.viewCount).replace("watching now", "").trim().replace(/,/g, ""))
-		: 0;
-
-	return {
+	const data = {
 		title,
 		channelId,
 		channelName,
 		isLive,
-		viewCount,
+		isUpcoming,
 		isMembersOnly,
+		metadata,
 	};
+
+	const playabilityStatus = findPlayabilityStatus(html);
+	// even if playabilityStatus missing you can still have chat
+	if (playabilityStatus) {
+		try {
+			assertPlayability(playabilityStatus, { channelId, data });
+		} catch (error) {
+			const byPass = error instanceof BotError || (error instanceof NoStreamRecordingError && channelId);
+			if (!byPass) {
+				throw error;
+			}
+		}
+	}
+
+	return data;
 }
+
+//#region metadata
 
 /**
  * @see http://schema.org/VideoObject
  */
-function parseVideoMetadataFromHtml(html: string) {
+function parseVideoMetadataFromHtml(html: string): VideoObject {
 	const $ = cheerio.load(html);
-	const meta = parseVideoMetadataFromElement($("[itemtype=http://schema.org/VideoObject]")?.[0]);
+	const meta = parseVideoMetadataFromElement($("[itemtype=http://schema.org/VideoObject]")?.[0]) as VideoObject;
 	return meta;
 }
 
 function parseVideoMetadataFromElement(root: any, meta: Record<string, any> = {}) {
-	root?.children?.forEach((child: cheerio.Element) => {
+	root?.children?.forEach((child: any) => {
 		const attributes = child?.attribs;
 		const key = attributes?.itemprop;
 		if (!key) {
@@ -209,7 +216,12 @@ function parseVideoMetadataFromElement(root: any, meta: Record<string, any> = {}
 		}
 
 		if (child.children.length) {
-			meta[key] = parseVideoMetadataFromElement(child);
+			const value = parseVideoMetadataFromElement(child);
+			if (meta[key]) {
+				meta[key] = [meta[key], value];
+			} else {
+				meta[key] = value;
+			}
 			return;
 		}
 
@@ -224,13 +236,16 @@ function parseVideoMetaValueByKey(key: string, value: string) {
 	switch (key) {
 		case "paid":
 		case "unlisted":
+		case "requiresSubscription":
 		case "isFamilyFriendly":
-		case "interactionCount":
 		case "isLiveBroadcast":
 			return /true/i.test(value);
 		case "width":
 		case "height":
+		case "userInteractionCount":
 			return Number(value);
 	}
 	return value;
 }
+
+//#endregion
